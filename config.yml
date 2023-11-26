@@ -7,7 +7,6 @@ general:
   gtf_header: 4
   init_bedtools: module load bedtools
   n_gtf_clusters: null
-  run_tests: true
   three_prime_regulatory_nts: 1000
   tmp_dir: /data/archiv/SCC/ag-gruber/jthorwarth/PROJECTS/MASTER_THESIS/VARIANT_VISUALIZER/.tmp
 pas_atlas:
