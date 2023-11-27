@@ -30,6 +30,8 @@ if __name__ == '__main__':
     n_processes = args.n_processes
     global selected_clusters
     selected_clusters = args.selected_clusters
+    if selected_clusters is None:
+        selected_clusters = 'all'
 
     print(f'Generating Clusters using {n_processes} parallel processes ...')
     with ProcessingPool(n_processes) as pool:

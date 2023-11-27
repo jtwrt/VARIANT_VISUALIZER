@@ -173,18 +173,25 @@ class Cluster():
         self.cre = cre_dict
         self.variants = variants
 
-    def get_reference(self, transcript_id=None):
+    def get_reference(self, gene_id=None, transcript_id=None):
         """
         Return a BioReference from this cluster. By default, 
         returns a general GenomicReference matching features in this cluster.
         If transcript_id is a valid ensembl_id, returns the TranscriptReference.
+        If gene_id is a valid ensembl_id, returns the matching GenomicRefernce
+        for the gene.
         """
-        if transcript_id is None:
+        if transcript_id is None and gene_id is None:
             return self.gtf_cluster.reference
-        else:
+        elif transcript_id is None and gene_id is not None:
+            for r in self.gtf_cluster.all_regions:
+                if r.gene_id == gene_id:
+                    return r.reference
+        elif transcript_id is not None and gene_id is None:
             for r in self.gtf_cluster.all_regions:
                 if r.transcript_id == transcript_id:
                     return r.reference
+        else:
             raise ValueError('Transript not found in this cluster.')
     
     def get_gtf_cluster(self):
