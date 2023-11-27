@@ -1,5 +1,7 @@
 # VARIANT_VISUALIZER
 
+![PTEN genomic region, cis-regulatory elements and somatic variants](example_pten_gene.pdf)
+
 > README is work in progress!
 
 Visualizing genomic regions, transcripts and proteins, their known functional regions, regulatory elements and the mutations affecting them.
@@ -33,6 +35,8 @@ python setup_dependencies.py
 
 ### Generate clusters
 
+#### All clusters
+
 Generate genomic clusters by running `setup_clusters.py` passing the number of parallel processes as argument.
 Generating all clusters is currently very resource intensive. For each parallel process, 20 GB of memory are advised. Use as many parallel processes as you can afford. This will allow you to visualize any gene/transcript/protein.
 
@@ -40,11 +44,19 @@ Generating all clusters is currently very resource intensive. For each parallel 
 python setup_clusters.py --n_processes 1
 ```
 
+#### A selection of clusters
+
 If you wish to prepare the package for plotting a set of specific genes and you are using the default input files that were automatically prepared in the previous step, you can download a pre-generated index and query genes and transcript to find out which clusters you need to set up.
 
-> Missing description of querying index
+> missing description of enabling default index
+```python
+import variant_visualizer as vv
+index = vv.clusters.load_index('pre-generated')
+pten_cluster = index.query_gene_name('PTEN')
+print(pten_cluster) # 3175
+```
 
-This command only calculates the cluster which includes the gene PTEN, allowing you to reproduce examples of in `vignette.ipynb`:
+This command only calculates the cluster which includes the gene PTEN, allowing you to reproduce examples shown in `vignette.ipynb`:
 
 ```bash
 python setup_clusters.py --n_processes 1 --cluster_ids 3175
@@ -52,7 +64,7 @@ python setup_clusters.py --n_processes 1 --cluster_ids 3175
 
 ### Set up the ClusterIndex
 
-If you have not downloaded the pre-generated index, run `setup_index.py` to generate a index of the previously generated clusters.
+If you have generated clusters and you do not wish to rely on the pre-generated index, run `setup_index.py` to generate an index including all clusters that were generated in the previous step. Re-run the script to update the index if new clusters were generated.
 
 ```bash
 python setup_index.py

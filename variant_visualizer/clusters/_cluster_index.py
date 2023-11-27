@@ -157,5 +157,19 @@ class ClusterIndex():
 def _get_index_path() -> str:
     return os.path.join(config['general']['data_dir'], 'cluster_index.dill')
 
-def load_index() -> ClusterIndex:
-    return dill_load_object(_get_index_path())
+def _get_pre_generated_index_path() -> str:
+    return os.path.join(config['general']['data_dir'], 'default_cluster_index.dill')
+
+def load_index(index='own') -> ClusterIndex:
+    """
+    Load a ClusterIndex from a binary file. 
+    Default option loads ClusterIndex generated with setup_index.py.
+    Set index=\'pre-generated\' to load the pre-generated ClusterIndex.
+    """
+    if index == 'own':
+        index_path = _get_index_path()
+    elif index == 'pre-generated':
+        index_path = _get_pre_generated_index_path()
+    else:
+        raise ValueError
+    return dill_load_object(index_path)
