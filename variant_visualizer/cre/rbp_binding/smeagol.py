@@ -104,6 +104,7 @@ def get_smeagol_rbp_binding(bio_region: core.BioRegion, pwms, model: smeagol.mod
             sequence=sequence,
             matrix_id=str(row['Matrix_id'])        
             )
+        binding = pwms[pwms.Matrix_id==str(row['Matrix_id'])]['Gene_name'].values[0]
         binding_sites.append(
             RBPBinding(
                 start=start,
@@ -112,9 +113,10 @@ def get_smeagol_rbp_binding(bio_region: core.BioRegion, pwms, model: smeagol.mod
                     'genomic',
                     chromosome=bio_region.reference.chromosome,
                     strand=row['sense']),
-                binding=pwms[pwms.Matrix_id==str(row['Matrix_id'])]['Gene_name'].values[0],
+                binding=binding,
                 score=row['frac_score'],
                 info=info,
-                source='smeagol_prediction'
+                source='smeagol_prediction',
+                label=f'RBP-Gene: {binding}, Score: {row["frac_score"]}, Sequence: {sequence}'
                 ))
     return binding_sites

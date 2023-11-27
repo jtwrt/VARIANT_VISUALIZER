@@ -169,6 +169,67 @@ class Cluster():
         self.cre = cre_dict
         self.variants = variants
 
+    def get_reference(self):
+        """Return a general GenomicReference matching features in this cluster."""
+        return self.gtf_cluster.reference
+    
+    def get_gtf_cluster(self):
+        """Return the associated GtfCluser object"""
+        return self.gtf_cluster
+    
+    def _get_filter_regions(self, gene_ids='all', transcript_ids='all'):
+        """Return gtf features with matching gene_ids and transcript_ids"""
+
+        out = self.gtf_cluster.all_regions
+        if gene_ids == 'all' and transcript_ids == 'all':
+            return out
+        
+        if gene_ids != 'all':
+            if not all([isinstance(e, str) and e[0:4]=='ENSG' for e in gene_ids]):
+                raise ValueError
+            out = [r for r in out if r.gene_id in gene_ids]
+        if transcript_ids != 'all':
+            if not all([isinstance(e, str) and e[0:4]=='ENST' for e in transcript_ids]):
+                raise ValueError
+            out = [r for r in out if r.transcript_id in transcript_ids]
+        return out
+
+    def get_variants(self, gene_ids='all', transcript_ids='all'):
+        """
+        Return variants that overlap the given genes or transcripts. 
+        Provide list or set of ensembl_ids to filter variants. 
+        Returns all cluster variants by default.
+        """
+        out = self.variants
+        if gene_ids == 'all' and transcript_ids == 'all':
+            return out
+
+        filter_regions = self._get_filter_regions(
+            gene_ids=gene_ids,
+            transcript_ids=transcript_ids
+        )
+        return [r for r in out if any([r.overlaps(f) for f in filter_regions])]       
+    
+    def get_cis_regulatory_elements(self, gene_ids='all', transcript_ids='all'):
+        """
+        Return cis-regulatory elements of this cluster, which overlap the given genes or transcripts.
+        Provide list or set of ensembl_ids to filter variants. 
+        Returns all cluster variants by default.
+        """
+
+        if gene_ids == 'all' and transcript_ids == 'all':
+            return self.cre
+
+        filter_regions = self._get_filter_regions(
+            gene_ids=gene_ids,
+            transcript_ids=transcript_ids
+        )
+        out = dict()
+        for key in self.cre:
+            this_cre = self.cre[key]
+            out[key] = [r for r in this_cre if any([r.overlaps(f) for f in filter_regions])]
+        return out
+
 def _get_cluster_path(cluster_id: int) -> str:
     return os.path.join(config['general']['data_dir'], f'clusters/cluster_{cluster_id}.dill')
 

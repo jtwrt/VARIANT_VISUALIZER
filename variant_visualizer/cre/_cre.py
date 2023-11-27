@@ -3,7 +3,7 @@ from .. import core
 
 class CRE(core.BioRegion):
 
-    def __init__(self, start: int, end: int, reference: core._BioReference, source: str, info=dict()):
+    def __init__(self, start: int, end: int, reference: core._BioReference, source: str, info=dict(), label=None):
         """
         BioRegion object that requires additional input:
         source: str
@@ -11,7 +11,7 @@ class CRE(core.BioRegion):
         info: str
             String attribute can be used to place additional information.
         """
-        super().__init__(start, end, reference)
+        super().__init__(start, end, reference, label=label)
         if not isinstance(source, str) or not isinstance(info, dict):
             raise TypeError()
         self.source = source

@@ -3,20 +3,9 @@
 from plotly.graph_objects import Figure as _GoFigure
 
 
-from ..io.parse_config import config as _config
-from ..core.bio_references import _BioReference
-from ..core.bio_regions import BioRegion as _BioRegion
-from ..core.bio_references import GenomicReference
-from ..core.bio_references import TranscriptReference
-from ..core.bio_references import ProteinReference
-from ..core.bio_regions import BioRegion
-from ..core.conversion import OutOfBoundsException as _OutOfBoundsException
-from ..core.regions import Region
-from ..io.gtf import GtfCluster
-from ..core.regions import combine_regions as _combine_regions
-from ..core.regions import get_gap as _get_gap
-from ..io.gtf import collapse_genes as _collapse_genes
-#from .plot_bio_regions import PlotBioRegions
+from .._config import config
+from .. import core, clusters
+from .. import genome_annotation as ga
 
 import warnings as _warnings
 from collections import Counter as _Counter
@@ -26,11 +15,13 @@ import plotly.graph_objs as _pgo
 Shape = _go.layout.Shape
 
 
-class MissingStyleAttributeException(Exception): pass
+class MissingStyleAttributeException(Exception): 
+    """Raised if required value in style_dict/config for plotting is missing"""
+    pass
 
 class Figure(object):
 
-    def __init__(self, reference: _BioReference, layout=None, style_dict=None):
+    def __init__(self, reference: core._BioReference, layout=None, style_dict=None):
         
         self.style_dict = style_dict
         
@@ -49,11 +40,11 @@ class Figure(object):
                                         showticklabels=False)
                          )
         
-        if isinstance(reference, GenomicReference):
+        if isinstance(reference, core.GenomicReference):
             xaxis_title = f'Nucelotide on chromosome {reference.chromosome}'
-        elif isinstance(reference, TranscriptReference):
+        elif isinstance(reference, core.TranscriptReference):
             xaxis_title = f'Nucelotide in transcribed region'
-        elif isinstance(reference, ProteinReference):
+        elif isinstance(reference, core.ProteinReference):
             xaxis_title = f'Amino acid in protein'
         else:
             raise TypeError('Reference has unsupported type.')
@@ -81,7 +72,7 @@ class Figure(object):
 
     @style_dict.setter
     def style_dict(self, value):
-        default_style_dict = _config['visualization']['figure_style_dict']
+        default_style_dict = config['visualization']['figure_style_dict']
         if value is None:
             self._style_dict = dict()
         else:
@@ -178,6 +169,7 @@ class Figure(object):
                                                             self._x_max+(dist*self._right_buffer)]}})
     
     def add_whitespace(self, whitespace: float) -> None:
+        """Add an empty track to the figure."""
         self._y_min += whitespace
         self._y_max += whitespace
 
@@ -209,7 +201,7 @@ class Figure(object):
                 else:
                     try:
                         converted_regions.append(r.convert(self.reference))
-                    except _OutOfBoundsException:
+                    except core.OutOfBoundsException:
                         pass
             else: 
                 converted_regions.append(r)
@@ -268,13 +260,9 @@ class Figure(object):
                     show_labels = [show_labels for _ in regions]
                 else:
                     raise TypeError('show_labels has unsupported type.')
-                try:
-                    label = r.label
-                except AttributeError:
-                    label = ''
-                if label != '':
-                    hover_labels.append(f'<b>{show_labels[i]} in {r.start}-{r.end}</b><br>{label}')
-                elif label == '':
+                if r.label is not None:
+                    hover_labels.append(f'<b>{show_labels[i]} in {r.start}-{r.end}</b><br>{r.label}')
+                else:
                     hover_labels.append(f'<b>{show_labels[i]} in {r.start}-{r.end}</b>')                   
                 traces.append(_go.Scatter(mode='markers',
                                       x=[r.start + 0.5 * (r.end - r.start) for r in regions],
@@ -301,7 +289,7 @@ class Figure(object):
                                     x=[None],
                                     y=[None],
                                     name=text,
-                                    marker=dict(symbol='square',
+                                    marker=dict(symbol=symbol,
                                                 opacity=opacity,
                                                 color=fill_color,
                                                 line=dict(color=line_color,
@@ -341,7 +329,7 @@ class Figure(object):
                                            )
         self._add_to_next_update(annotation=annotation)
 
-    def add_gtf_transcript_features(self, gtf_cluster, style_dict=None, transcript_ids=[], gene_ids=[], regulatory_sequence=True) -> None:
+    def add_gtf_transcript_features(self, cluster: clusters.Cluster, style_dict=None, transcript_ids=[], gene_ids=[], regulatory_sequence=True) -> None:
         """
         Description
         ---
@@ -351,6 +339,7 @@ class Figure(object):
         If regulatory_sequence is True, plots regulatory sequences up- and downstream of each transcript.
         """
         
+        gtf_cluster = cluster.gtf_cluster
         gtf_regions = gtf_cluster.all_regions
 
         if len(gene_ids) != 0:
@@ -380,7 +369,7 @@ class Figure(object):
                             exon=[]
                            )
             for r in transcript_regions:
-                if not isinstance(r, BioRegion):
+                if not isinstance(r, ga.GtfFeature):
                     raise TypeError()
                 if not features.get(r.feature):
                     features[r.feature] = []
@@ -432,7 +421,7 @@ class Figure(object):
                                     side='left',
                                     margin=220)
 
-    def add_gtf_collapsed_genes(self, gtf_cluster, style_dict=None, transcript_ids=[], gene_ids=[], regulatory_sequence=True, strand='both') -> None:
+    def add_gtf_collapsed_genes(self, cluster: clusters.Cluster, style_dict=None, transcript_ids=[], gene_ids=[], regulatory_sequence=True, strand='both') -> None:
         """
         Description
         ---
@@ -441,6 +430,7 @@ class Figure(object):
         If strand is either + or -, only plots genes that are located on that strand.
         """
 
+        gtf_cluster = cluster.gtf_cluster
         gtf_regions = gtf_cluster.all_regions
 
         if len(gene_ids) != 0:
@@ -453,7 +443,7 @@ class Figure(object):
                 raise ValueError('Invalid strand value.')
             gtf_regions = [r for r in gtf_regions if r.reference.strand == strand]
 
-        collapsed_genes = _collapse_genes(gtf_regions)
+        collapsed_genes = ga.collapse_gtf_genes(gtf_regions)
         gene_ids = collapsed_genes.keys()
               
         row_height = self._retrieve_style('row_height', 'add_gtf_collapsed_genes', style_dict)
@@ -551,7 +541,7 @@ class Figure(object):
                 for l in locations:
                     try:
                         mapped_locations.append(l.convert(self.reference))
-                    except _OutOfBoundsException:
+                    except core.OutOfBoundsException:
                         unmapped_locations.append(l.start)
             all_mapped_locations.extend([m.start for m in mapped_locations])
             if not variant_types.get(r.variant_type):
@@ -571,7 +561,7 @@ class Figure(object):
 
         # Line at base of stacked bars
         if base is None:
-            base = Region(start=min(all_mapped_locations), 
+            base = core.Region(start=min(all_mapped_locations), 
                           end=max(all_mapped_locations))
         shapes.append(Shape(type='rect',
                             x0=base.start,
@@ -680,8 +670,9 @@ class Figure(object):
                                 traces=traces,
                                 annotation=annotation)
 
-    def add_gtf_cluster(self, gtf_cluster: GtfCluster, strands=['-', '+'], style_dict=None, gene_ids=[], transcript_ids=[]):
+    def add_gtf_cluster(self, cluster: clusters.Cluster, strands=['-', '+'], style_dict=None, gene_ids=[], transcript_ids=[]):
 
+        gtf_cluster = cluster.gtf_cluster
         plot_regions = gtf_cluster.cluster_segments
 
         for strand in strands:
@@ -727,11 +718,11 @@ class Figure(object):
         for p in pas:
             cleavage_sites.add(p.cleavage_site)
             if not p.touches(p.cleavage_site):
-                this_connection = _get_gap(p, p.cleavage_site)
-                connections.append(_BioRegion(this_connection.start,
+                this_connection = core.get_gap(p, p.cleavage_site)
+                connections.append(core.BioRegion(this_connection.start,
                                               this_connection.end,
                                               p.reference))
-        connections = _combine_regions(connections)
+        connections = core.combine_regions(connections)
 
         row_height = self._retrieve_style('row_height', 'add_pas', style_dict)
         color = self._retrieve_style('color', 'add_pas', style_dict)

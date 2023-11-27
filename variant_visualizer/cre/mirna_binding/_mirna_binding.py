@@ -5,7 +5,7 @@ from .._cre import CRE
 class MiRNABinding(CRE):
 
     def __init__(self, start: int, end: int, reference: core._BioReference, 
-                 source: str, binding: str, score: float, info=dict()
+                 source: str, binding: str, score: float, info=dict(), label=None
                  ):
         """
         CRE object that requires additional input:
@@ -16,7 +16,7 @@ class MiRNABinding(CRE):
         score: float
             attribute should be used for binding site prediction scores
         """
-        super().__init__(start, end, reference, source, info)
+        super().__init__(start, end, reference, source, info, label=label)
         if not isinstance(binding, str) or not isinstance(score, float):
             raise TypeError()
         self.binding = binding

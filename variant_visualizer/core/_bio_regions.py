@@ -18,9 +18,10 @@ class BioRegion(Region):
                 Assign reference object created using the get_reference function 
     """
 
-    def __init__(self, start: int, end: int, reference: _BioReference):
+    def __init__(self, start: int, end: int, reference: _BioReference, label=None):
         super().__init__(start, end)
         self.reference = reference
+        self.label=label
 
     def __key(self):
         return ('BioRegion', self.start, self.end, self.reference)

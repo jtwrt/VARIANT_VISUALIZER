@@ -69,6 +69,7 @@ def _get_pas_in_row(i: int, row) -> list:
             reference=reference,
             sequence=signal.split('@')[0],
             source=source,
-            cleavage_site=cleavage_site
+            cleavage_site=cleavage_site,
+            label=signal
             )) 
     return out

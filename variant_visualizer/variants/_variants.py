@@ -6,9 +6,9 @@ class Variant(core.BioRegion):
     def __init__(self, start: int, end: int, reference: core._BioReference,
                  variant_type: str, consequence: str, sample_id: str, normal_sample_id: str,
                  disease: str, source: str, 
-                 ref_allele: str, alt_allele_1: str, alt_allele_2: str
+                 ref_allele: str, alt_allele_1: str, alt_allele_2: str, label=None
                  ):
-        super().__init__(start, end, reference)
+        super().__init__(start, end, reference, label=label)
         variant_attributes = [
             variant_type, consequence, sample_id, normal_sample_id,
             disease, source, ref_allele, alt_allele_1, alt_allele_2

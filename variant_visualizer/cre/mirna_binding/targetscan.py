@@ -22,12 +22,15 @@ def get_targetscan_mirna_binding(bio_region: core.BioRegion, targetscan_db: pd.D
         reference = core.get_reference(reference_type='genomic', 
                                    chromosome=io_utils.remove_chr(chromosome=row[0]),
                                    strand = row[5])
+        binding = row[3].split(":")[-1]
+        score = float(row[4])
         out.append(MiRNABinding(
             start=row[1],
             end=row[2],
             reference=reference,
             source=f'targetscan_target_locations_row:{i}',
-            binding=row[3].split(":")[-1],
-            score=float(row[4])
+            binding=binding,
+            score=score,
+            label=f'{binding}, context++ percentile: {score}'
             ))
     return out
