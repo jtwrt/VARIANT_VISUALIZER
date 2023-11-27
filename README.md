@@ -1,16 +1,22 @@
 # VARIANT_VISUALIZER
 
-![PTEN genomic region, cis-regulatory elements and somatic variants](example_pten_gene.png)
 
 > README is work in progress!
 
-Visualizing genomic regions, transcripts and proteins, their known functional regions, regulatory elements and the mutations affecting them.
+![PTEN genomic region, cis-regulatory elements and somatic variants](example_pten_gene.png)
+
+Visualize genomic regions, transcripts and proteins, their known functional regions, regulatory elements and the mutations affecting them in interactive plots.
 
 ## Setup
 
 ### Prepare config.yml
 
-At a minimum, the following values need to be defined in the `config.yml` (general section):
+Copy the provided `base_config.yml`:
+```bash
+cp base_config.yml config.yml
+```
+
+At a minimum, the following values need to be defined in the `config.yml`:
 - `init_bedtools`: Bash command that enables use of the `bedtools` command in the command line.
 - `ucsc_liftover`: Path of the UCSC-Liftover executable.
 
@@ -48,7 +54,6 @@ python setup_clusters.py --n_processes 1
 
 If you wish to prepare the package for plotting a set of specific genes and you are using the default input files that were automatically prepared in the previous step, you can download a pre-generated index and query genes and transcript to find out which clusters you need to set up.
 
-> missing description of enabling default index
 ```python
 import variant_visualizer as vv
 index = vv.clusters.load_index('pre-generated')

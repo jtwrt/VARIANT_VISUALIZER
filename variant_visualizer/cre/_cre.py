@@ -29,12 +29,9 @@ class CRE(core.BioRegion):
     def __eq__(self, other: CRE):
             """Compares BioRegions. Must be implemented by subclasses."""
             this_class = CRE
-            # do not compare subclasses with this method
-            if issubclass(self.__class__, this_class) or issubclass(other.__class__, this_class):
-                raise NotImplementedError("Subclasses must implement __eq__ method to test equality.")
             if isinstance(other, this_class):
                 return self.__key() == other.__key()
-            elif other is None:
+            elif isinstance(other, core.Region) or other is None:
                 return False
             else:
                 raise TypeError(f'Testing equality not defined between given objects.')

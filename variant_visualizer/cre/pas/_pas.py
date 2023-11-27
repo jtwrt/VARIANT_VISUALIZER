@@ -42,7 +42,7 @@ class PAS(CRE):
             this_class = PAS
             if isinstance(other, this_class):
                 return self.__key() == other.__key()
-            elif isinstance(other, core.BioRegion) or other is None:
+            elif isinstance(other, core.Region) or other is None:
                 return False
             else:
                 raise TypeError(f'Testing equality not defined between given objects.')

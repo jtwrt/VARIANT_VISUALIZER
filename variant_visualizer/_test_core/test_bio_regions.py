@@ -21,7 +21,7 @@ def test_convert_2():
 
 def test_convert_3():
     bio_region = BioRegion(start=7,end=8,
-                           reference=get_reference('genomic', coding_regions=[Region(3,4), Region(7,9)], chromosome='10', strand='+') 
+                           reference=get_reference('genomic', coding_regions=set([Region(3,4), Region(7,9)]), chromosome='10', strand='+') 
                            )
     out = bio_region.convert(get_reference('protein'))
     assert (out.start, out.end) == (1, 2)
@@ -42,31 +42,31 @@ def test_convert_5():
 
 def test_convert_6():
     bio_region = BioRegion(1,1,
-                           reference=get_reference('protein', coding_regions=[Region(3,4), Region(7,9)], chromosome='10', strand='+'))
+                           reference=get_reference('protein', coding_regions=set([Region(3,4), Region(7,9)]), chromosome='10', strand='+'))
     out = bio_region.convert(get_reference('genomic', chromosome='10', strand='+'))
     assert (out.start, out.end) == (3, 7)
 
 def test_convert_7():
     bio_region = BioRegion(2,4,
-                           get_reference('protein', transcript_region=Region(1,12), coding_regions=[Region(1,12)], strand='+'))
+                           get_reference('protein', transcript_region=Region(1,12), coding_regions=set([Region(1,12)]), strand='+'))
     out = bio_region.convert(get_reference('transcript'))
     assert (out.start, out.end) == (4, 12)
 
 def test_convert_8():
     bio_region = BioRegion(2,4,
-                           get_reference('protein', transcript_region=Region(1,12), coding_regions=[Region(1,12)], strand='-'))
+                           get_reference('protein', transcript_region=Region(1,12), coding_regions=set([Region(1,12)]), strand='-'))
     out = bio_region.convert(get_reference('transcript'))
     assert (out.start, out.end) == (4, 12)
 
 def test_convert_9():
     bio_region = BioRegion(2,4,
-                           get_reference('protein', transcript_region=Region(1,15), coding_regions=[Region(1,2),Region(6,15)], strand='+'))
+                           get_reference('protein', transcript_region=Region(1,15), coding_regions=set([Region(1,2),Region(6,15)]), strand='+'))
     out = bio_region.convert(get_reference('transcript'))
     assert (out.start, out.end) == (7, 15)
 
 def test_convert_10():
     bio_region = BioRegion(2,4,
-                           get_reference('protein', transcript_region=Region(1,15), coding_regions=[Region(1,2),Region(6,15)], strand='-'))
+                           get_reference('protein', transcript_region=Region(1,15), coding_regions=set([Region(1,2),Region(6,15)]), strand='-'))
     out = bio_region.convert(get_reference('transcript'))
     assert (out.start, out.end) == (4, 15)  
 

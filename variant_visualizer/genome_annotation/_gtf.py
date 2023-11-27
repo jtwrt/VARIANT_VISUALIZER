@@ -88,7 +88,7 @@ class GtfFeature(core.BioRegion):
             this_class = GtfFeature
             if isinstance(other, this_class):
                 return self.__key() == other.__key()
-            elif isinstance(other, core.BioRegion) or other is None:
+            elif isinstance(other, core.Region) or other is None:
                 return False
             else:
                 raise TypeError(f'Testing equality not defined between given objects.')
@@ -167,12 +167,9 @@ class GtfCluster(core.BioRegion):
     def __eq__(self, other: GtfCluster):
             """Compares BioRegions. Must be implemented by subclasses."""
             this_class = GtfCluster
-            # do not compare subclasses with this method
-            if issubclass(self.__class__, this_class) or issubclass(other.__class__, this_class):
-                raise NotImplementedError("Subclasses must implement __eq__ method to test equality.")
             if isinstance(other, this_class):
                 return self.__key() == other.__key()
-            elif other is None:
+            elif isinstance(other, core.Region) or other is None:
                 return False
             else:
                 raise TypeError(f'Testing equality not defined between given objects.')
@@ -215,7 +212,7 @@ class GtfCluster(core.BioRegion):
         reference_regions = {}
         transcripts = []
         empty_ref = {'transcript_region':None,
-                    'coding_regions':[]
+                    'coding_regions':set()
                     }
         for r in out:
             if r.transcript_id == '':
@@ -226,7 +223,7 @@ class GtfCluster(core.BioRegion):
                 reference_regions[r.transcript_id]['transcript_region'] = r
                 transcripts.append(r)
             elif r.feature == 'CDS':
-                reference_regions[r.transcript_id]['coding_regions'].append(r)
+                reference_regions[r.transcript_id]['coding_regions'].add(r)
 
         references = dict()
         for id in reference_regions:
@@ -237,7 +234,7 @@ class GtfCluster(core.BioRegion):
                                         transcript_region=core.Region(start=reference_regions[id]['transcript_region'].start,
                                                                 end=reference_regions[id]['transcript_region'].end
                                                                 ),
-                                        coding_regions=[core.Region(c.start,c.end) for c in reference_regions[id]['coding_regions']]
+                                        coding_regions=set([core.Region(c.start,c.end) for c in reference_regions[id]['coding_regions']])
                                         )
             except AttributeError:
                 pass

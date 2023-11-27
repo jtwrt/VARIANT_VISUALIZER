@@ -173,9 +173,19 @@ class Cluster():
         self.cre = cre_dict
         self.variants = variants
 
-    def get_reference(self):
-        """Return a general GenomicReference matching features in this cluster."""
-        return self.gtf_cluster.reference
+    def get_reference(self, transcript_id=None):
+        """
+        Return a BioReference from this cluster. By default, 
+        returns a general GenomicReference matching features in this cluster.
+        If transcript_id is a valid ensembl_id, returns the TranscriptReference.
+        """
+        if transcript_id is None:
+            return self.gtf_cluster.reference
+        else:
+            for r in self.gtf_cluster.all_regions:
+                if r.transcript_id == transcript_id:
+                    return r.reference
+            raise ValueError('Transript not found in this cluster.')
     
     def get_gtf_cluster(self):
         """Return the associated GtfCluser object"""
@@ -212,6 +222,7 @@ class Cluster():
             gene_ids=gene_ids,
             transcript_ids=transcript_ids
         )
+        strands = set([r.reference.strand for r in filter_regions])
         return [r for r in out if any([r.overlaps(f) for f in filter_regions])]       
     
     def get_cis_regulatory_elements(self, gene_ids='all', transcript_ids='all'):

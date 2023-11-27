@@ -37,7 +37,7 @@ class BioRegion(Region):
         this_class = BioRegion
         if isinstance(other, this_class):
             return self.__key() == other.__key()
-        elif isinstance(other, BioRegion) or other is None:
+        elif isinstance(other, Region) or other is None:
             return False
         else:
             raise TypeError(f'Testing equality not defined between given objects.')

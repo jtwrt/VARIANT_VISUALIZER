@@ -116,6 +116,27 @@ class _BioReference():
         if "strand" in self.__dict__.keys() and self.strand is not None:
             _ = check_strand(strand=self.strand)
 
+        # convert reference regions to basic Region objects
+        self.convert_reference_regions()
+
+
+    def convert_reference_regions(self):
+        """Convert transcript_region and coding_regions to basic Region objects"""
+
+        def convert_region(region: Region):
+            if isinstance(region, Region):
+                return Region(region.start, region.end)
+            else:
+                raise TypeError
+
+        if 'transcript_region' in self.__dict__.keys() and isinstance(self.transcript_region, Region):
+            self.transcript_region = convert_region(self.transcript_region)
+        if 'coding_regions' in self.__dict__.keys() and \
+                self.coding_regions is not None and \
+                all([isinstance(r, Region) for r in self.coding_regions]):
+            self.coding_regions = set([convert_region(r) for r in self.coding_regions])
+        
+
     def __repr__(self) -> str:
         this_class = str(self.__class__).split('.')[-1][:-2]
         out = [str(this_class)]
@@ -167,6 +188,7 @@ class _BioReference():
                         raise ValueError(f'Properties \'{kw}\' are set in both references and differ.')
                     elif force is False:
                         self.__dict__[kw] = other.__dict__[kw]
+        self.convert_reference_regions()
         
     def list_missing_conversion_args(self, other: _BioReference) -> list:
         """Returns attributes that are missing to allow conversion between _BioReference child classes."""
@@ -210,7 +232,7 @@ class GenomicReference(_BioReference):
     mandatory_args = deepcopy(_BioReference.mandatory_args)
     mandatory_args.append(('chromosome', str))
     conversion_args = {'transcript': [('transcript_region', Region)],
-                       'protein': [('coding_regions', list),
+                       'protein': [('coding_regions', set),
                                    ('strand', str)]
                        }
     
@@ -232,8 +254,8 @@ class ProteinReference(_BioReference):
     
     reference_type = 'protein'
     mandatory_args = deepcopy(_BioReference.mandatory_args)
-    conversion_args = {'genomic': [('coding_regions', list)],
-                       'transcript': [('coding_regions', list),
+    conversion_args = {'genomic': [('coding_regions', set)],
+                       'transcript': [('coding_regions', set),
                                       ('transcript_region', Region),
                                       ('strand', str)]
                        }

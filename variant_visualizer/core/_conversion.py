@@ -5,9 +5,9 @@ class OutOfBoundsException(Exception):
     """
     pass
 
-def clean_reference_regions(regions: list):
+def clean_reference_regions(regions: set):
     """Sorts regions and makes sure that none are overlapping."""
-    if not isinstance(regions, list):
+    if not isinstance(regions, set):
         raise TypeError
     n_regions = len(regions)
     if n_regions == 0:
@@ -22,7 +22,7 @@ def clean_reference_regions(regions: list):
                     raise ValueError(f'Cannot map to overlapping regions.')
         return regions
 
-def map_location_to_regions(location: int, regions: list) -> int:
+def map_location_to_regions(location: int, regions: set) -> int:
     """
     Description
     ----------
@@ -44,7 +44,7 @@ def map_location_to_regions(location: int, regions: list) -> int:
 
     raise OutOfBoundsException(f'Given location is not within provided regions.')
 
-def map_location_from_regions(location: int, regions: list) -> int:
+def map_location_from_regions(location: int, regions: set) -> int:
     """
     Description
     ----------

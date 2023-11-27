@@ -29,11 +29,11 @@ def convert_location(location: int, input_reference: _BioReference, output_refer
 
         if isinstance(output_reference, TranscriptReference):
             return map_location_to_regions(location=location,
-                                            regions=[transcript_region])
+                                            regions=set([transcript_region]))
 
         elif isinstance(output_reference, ProteinReference):
             base =  map_location_to_regions(location=location,
-                                             regions=coding_regions)
+                                             regions=set(coding_regions))
             return ceil(base / 3)
 
     elif isinstance(input_reference, TranscriptReference):
@@ -47,7 +47,7 @@ def convert_location(location: int, input_reference: _BioReference, output_refer
                 raise ValueError
 
             out = map_location_from_regions(location=location,
-                                              regions=[transcript_region])
+                                              regions=set([transcript_region]))
             if input_reference.strand == '-': 
                 return -out
             else: 
@@ -77,7 +77,7 @@ def convert_location(location: int, input_reference: _BioReference, output_refer
                 raise ValueError
 
             out = map_location_from_regions(location=location*3+i,
-                                             regions=coding_regions)
+                                             regions=set(coding_regions))
             if input_reference.strand == '-': 
                 return -out
             else: 
@@ -98,7 +98,7 @@ def convert_location(location: int, input_reference: _BioReference, output_refer
                 transcript_coding_regions.append(new_reg)
             # convert location to transcript_reference
             return map_location_from_regions(location=location*3+i,
-                                              regions=transcript_coding_regions)
+                                              regions=set(transcript_coding_regions))
     
     raise NotImplementedError('Reference types are not supported for conversion.')
     

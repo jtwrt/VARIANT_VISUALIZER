@@ -50,7 +50,7 @@ class ClusterIndexGenerator():
         )
             index_in[cluster_id]['gene_name'] = []
             for gene_id in cluster.gtf_cluster.gene_ids:
-                gene_names = uniprotkb.get_gene_name(gene_id, cluster.gtf_cluster)
+                gene_names = uniprotkb.get_gene_name(gene_id, cluster)
                 if gene_names == gene_id:
                     continue
                 gene_names = gene_names.split(';')
