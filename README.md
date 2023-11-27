@@ -1,6 +1,6 @@
 # VARIANT_VISUALIZER
 
-![PTEN genomic region, cis-regulatory elements and somatic variants](example_pten_gene.pdf)
+![PTEN genomic region, cis-regulatory elements and somatic variants](example_pten_gene.png)
 
 > README is work in progress!
 
