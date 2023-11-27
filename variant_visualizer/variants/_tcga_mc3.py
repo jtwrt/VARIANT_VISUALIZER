@@ -133,7 +133,9 @@ def get_row_variant(i: int, row: pd.Series):
         source=f'mc3_row:{i}',
         ref_allele=row['Reference_Allele'],
         alt_allele_1=row['Tumor_Seq_Allele1'],
-        alt_allele_2=row['Tumor_Seq_Allele2']
+        alt_allele_2=row['Tumor_Seq_Allele2'],
+        label = f'{row["Reference_Allele"]} > {row["Tumor_Seq_Allele1"]}, {row["Tumor_Seq_Allele2"]}; {consequence}'
+    
         )
 
 def get_mc3_variants(mc3_slice: pd.DataFrame) -> list:

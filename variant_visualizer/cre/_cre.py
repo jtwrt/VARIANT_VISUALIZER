@@ -11,7 +11,7 @@ class CRE(core.BioRegion):
         info: str
             String attribute can be used to place additional information.
         """
-        super().__init__(start, end, reference, label=label)
+        super().__init__(start, end, reference, label)
         if not isinstance(source, str) or not isinstance(info, dict):
             raise TypeError()
         self.source = source

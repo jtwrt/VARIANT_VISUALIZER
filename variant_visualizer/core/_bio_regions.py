@@ -21,7 +21,7 @@ class BioRegion(Region):
     def __init__(self, start: int, end: int, reference: _BioReference, label=None):
         super().__init__(start, end)
         self.reference = reference
-        self.label=label
+        self.label = label
 
     def __key(self):
         return ('BioRegion', self.start, self.end, self.reference)

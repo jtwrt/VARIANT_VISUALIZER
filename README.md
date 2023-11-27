@@ -34,15 +34,25 @@ python setup_dependencies.py
 ### Generate clusters
 
 Generate genomic clusters by running `setup_clusters.py` passing the number of parallel processes as argument.
-Generating all clusters is currently very resource intensive. For each parallel process, 20 GB of memory are advised. Use as many parallel processes as you can afford.
+Generating all clusters is currently very resource intensive. For each parallel process, 20 GB of memory are advised. Use as many parallel processes as you can afford. This will allow you to visualize any gene/transcript/protein.
 
 ```bash
-python setup_clusters.py 1
+python setup_clusters.py --n_processes 1
+```
+
+If you wish to prepare the package for plotting a set of specific genes and you are using the default input files that were automatically prepared in the previous step, you can download a pre-generated index and query genes and transcript to find out which clusters you need to set up.
+
+> Missing description of querying index
+
+This command only calculates the cluster which includes the gene PTEN, allowing you to reproduce examples of in `vignette.ipynb`:
+
+```bash
+python setup_clusters.py --n_processes 1 --cluster_ids 3175
 ```
 
 ### Set up the ClusterIndex
 
-Run `setup_index.py` to generate a index of the previously generated clusters.
+If you have not downloaded the pre-generated index, run `setup_index.py` to generate a index of the previously generated clusters.
 
 ```bash
 python setup_index.py

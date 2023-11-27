@@ -8,7 +8,7 @@ class Variant(core.BioRegion):
                  disease: str, source: str, 
                  ref_allele: str, alt_allele_1: str, alt_allele_2: str, label=None
                  ):
-        super().__init__(start, end, reference, label=label)
+        super().__init__(start, end, reference, label)
         variant_attributes = [
             variant_type, consequence, sample_id, normal_sample_id,
             disease, source, ref_allele, alt_allele_1, alt_allele_2
@@ -59,10 +59,6 @@ class Variant(core.BioRegion):
         else:
             raise TypeError(f'Testing equality not defined between given objects.')
 
-    @property
-    def label(self):
-        return f'{self.reference_allele} > {self.tumor_allele_1}, {self.tumor_allele_2}; {self.consequence}'
-    
     def is_snv(self):
         if self.variant_type == 'SNP':
             return True
