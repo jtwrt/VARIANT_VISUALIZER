@@ -1,8 +1,8 @@
 # VARIANT_VISUALIZER
 
-![PTEN genomic region, cis-regulatory elements and somatic variants](example_pten_gene.png)
-![PTEN transcript with annotations from UniprotKB](example_pten_transcript.png)
-![PTEN protein with annotations from UniprotKB](example_pten_protein.png)
+![PTEN genomic region, cis-regulatory elements and somatic variants](example_figures/example_pten_gene.png)
+![PTEN transcript with annotations from UniprotKB](example_figures/example_pten_transcript.png)
+![PTEN protein with annotations from UniprotKB](example_figures/example_pten_protein.png)
 
 ## Description
 
