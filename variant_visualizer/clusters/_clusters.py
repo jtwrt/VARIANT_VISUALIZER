@@ -203,7 +203,7 @@ class Cluster():
         elif transcript_id is not None and gene_id is None:
             for r in self.gtf_cluster.all_regions:
                 if r.transcript_id == transcript_id:
-                    return r.reference
+                    return r.reference.convert_reference_type('transcript')
         else:
             raise ValueError('Transript not found in this cluster.')
     
