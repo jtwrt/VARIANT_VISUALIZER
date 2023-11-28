@@ -186,27 +186,39 @@ class Cluster():
             self.cre = _cluster.cre
             self.variants = _cluster.variants
 
-    def get_reference(self, gene_id=None, transcript_id=None):
+    def get_reference(self, gene_id=None, transcript_id=None, reference_type='default'):
         """
         Return a BioReference from this cluster. By default, 
         returns a general GenomicReference matching features in this cluster.
         If transcript_id is a valid ensembl_id, returns the TranscriptReference.
         If gene_id is a valid ensembl_id, returns the matching GenomicRefernce
         for the gene.
+
+        If reference_type is either genomic/transcript/protein, 
+        tries to convert the default value to the requested reference type.
         """
         if transcript_id is None and gene_id is None:
-            return self.gtf_cluster.reference
+            out =  self.gtf_cluster.reference
         elif transcript_id is None and gene_id is not None:
             for r in self.gtf_cluster.all_regions:
                 if r.gene_id == gene_id:
-                    return r.reference
+                    out =  r.reference
+                    break
         elif transcript_id is not None and gene_id is None:
             for r in self.gtf_cluster.all_regions:
                 if r.transcript_id == transcript_id:
-                    return r.reference.convert_reference_type('transcript')
+                    out = r.reference.convert_reference_type('transcript')
+                    break
         else:
             raise ValueError('Transript not found in this cluster.')
     
+        if reference_type == 'default':
+            return out
+        else:
+            return out.convert_reference_type(
+                reference_type
+            )
+
     def get_gtf_cluster(self):
         """Return the associated GtfCluser object"""
         return self.gtf_cluster
