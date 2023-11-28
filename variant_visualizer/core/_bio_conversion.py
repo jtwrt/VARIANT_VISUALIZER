@@ -3,7 +3,7 @@ from ._conversion import map_location_to_regions, map_location_from_regions
 from ._bio_references import _BioReference, GenomicReference, TranscriptReference, ProteinReference, get_reference
 from math import ceil
 
-def convert_location(location: int, input_reference: _BioReference, output_reference: _BioReference, encoding_base=None):
+def convert_location(location: int, input_reference: _BioReference, output_reference: _BioReference, encoding_base=None, _return_floats=False):
     """
     Convert a BioRegion between from input_refernce to output_reference.
     (Location in genomic region, location in transcript/genomic subregion or location in protein.)
@@ -34,7 +34,10 @@ def convert_location(location: int, input_reference: _BioReference, output_refer
         elif isinstance(output_reference, ProteinReference):
             base =  map_location_to_regions(location=location,
                                              regions=set(coding_regions))
-            return ceil(base / 3)
+            if _return_floats is True:
+                return base / 3
+            else:
+                return ceil(base / 3)
 
     elif isinstance(input_reference, TranscriptReference):
         if isinstance(output_reference, GenomicReference):
@@ -54,7 +57,10 @@ def convert_location(location: int, input_reference: _BioReference, output_refer
                 return out
 
         elif isinstance(output_reference, ProteinReference):
-            return ceil(location / 3)
+            if _return_floats is True:
+                return location/3
+            else:
+                return ceil(location / 3)
 
     elif isinstance(input_reference, ProteinReference):
         if  encoding_base is None or encoding_base not in ['first', 'second', 'third']:

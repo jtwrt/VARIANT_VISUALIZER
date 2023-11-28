@@ -1,11 +1,16 @@
 # VARIANT_VISUALIZER
 
-
-> README is work in progress!
-
 ![PTEN genomic region, cis-regulatory elements and somatic variants](example_pten_gene.png)
+![PTEN transcript with annotations from UniprotKB](example_pten_transcript.png)
+![PTEN protein with annotations from UniprotKB](example_pten_protein.png)
 
-Visualize genomic regions, transcripts and proteins, their known functional regions, regulatory elements and the mutations affecting them in interactive plots.
+## Description
+
+This package allows to visualize genomic regions, transcripts and proteins, their known functional regions, regulatory elements and the mutations affecting them in interactive plots.
+
+The setup of this package generates Clusters. A Cluster included genomic features which are overlapping or sufficiently close to each other, and additionally includes all relevant somatic variants and cis-regulatory elements currently supported by the package.
+
+Once setup, the generation of figures is fast and allows interactive exploration on the genomic, transcript or protein level.  
 
 ## Setup
 
@@ -78,3 +83,24 @@ python setup_index.py
 ## Usage
 
 Read `vignette.ipynb` for exampels and detailed explaination on how this package can be used. 
+
+## References
+
+> Add links to references
+
+### Packages and programms
+
+- Plotly
+- Bedtools
+- UCSC Liftover
+- SMEAGOL
+
+### Data and resources
+
+- Gtf 
+- TCGA MC3
+- TCGA code tables
+- TCGA cosmic signatures
+- PAS-Atlas
+- TargetscanDB
+- UniprotKB

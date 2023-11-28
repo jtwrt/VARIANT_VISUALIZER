@@ -136,6 +136,15 @@ class _BioReference():
                 all([isinstance(r, Region) for r in self.coding_regions]):
             self.coding_regions = set([convert_region(r) for r in self.coding_regions])
         
+    def convert_reference_type(self, new_reference_type: str):
+        """
+        Returns a new BioReference of the given type. 
+        Transfers all attributes of to the new reference.
+        """
+        return get_reference(
+            reference_type=new_reference_type,
+            **self.__dict__
+            )
 
     def __repr__(self) -> str:
         this_class = str(self.__class__).split('.')[-1][:-2]

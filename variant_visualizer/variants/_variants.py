@@ -33,11 +33,11 @@ class Variant(core.BioRegion):
         return variant_attributes
 
     def __key(self):
-        out = ('Variant', self.start, self.end, self.reference)
+        out = ['Variant', self.start, self.end, self.reference]
         variant_attributes = self._get_variant_attributes()
         for attribute in variant_attributes:
-            out += f', {attribute}'
-        return out
+            out += attribute
+        return tuple(out)
     
     def __hash__(self) -> tuple:
         return hash(self.__key())

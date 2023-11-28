@@ -64,7 +64,8 @@ class UniprotAnnotations():
                                         strand=transcript_region.reference.strand),
                 annotation_type=a.type,
                 description=description,
-                source='UniprotKB_annotation'
+                source='UniprotKB_annotation',
+                label=description
                 ))
         return out
 

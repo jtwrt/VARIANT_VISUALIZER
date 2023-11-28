@@ -13,6 +13,7 @@ import plotly.graph_objects as _go
 import plotly.io as _pio
 import plotly.graph_objs as _pgo
 Shape = _go.layout.Shape
+from copy import deepcopy
 
 
 class MissingStyleAttributeException(Exception): 
@@ -136,7 +137,7 @@ class Figure(object):
         elif self._style_dict.get(function) is not None and self._style_dict[function].get(attribute) is not None:
             return self._style_dict[function][attribute]
         else:
-            raise KeyError(f'{attribute} not in function style_dict or config style_dict.')
+            raise MissingStyleAttributeException(f'{attribute} not in function style_dict or config style_dict.')
                
     def _init_row(self, row: str, row_height: float) -> float:
                 
@@ -173,7 +174,11 @@ class Figure(object):
         self._y_min += whitespace
         self._y_max += whitespace
 
-    def add_regions(self, regions: list, height_ratio: float, fill_color: str, line_color=None, legend_entry=False, line_width=0.5, opacity=1.0, show_labels=False, edge_extension=0.5, row='next', row_height=1.0) -> None:
+    def add_regions(
+            self, regions: list, height_ratio: float, fill_color: str, 
+            line_color=None, legend_entry=False, line_width=0.5, opacity=1.0, 
+            show_labels=False, edge_extension=0.5, row='next', 
+            row_height=1.0, _float_locations=False) -> None:
         """
         Description
         ---
@@ -184,7 +189,7 @@ class Figure(object):
 
         Parameters
         ---
-        show_labels : False / str
+        show_labels : False / True / str
                       Do not show labels on hovering over region if False. 
                       If String is provided, displays string on hover.
         """
@@ -200,7 +205,11 @@ class Figure(object):
                     _warnings.warn(f'Cannot plot non-convertible region {r}.')
                 else:
                     try:
-                        converted_regions.append(r.convert(self.reference))
+                        converted_regions.append(
+                            r.convert(
+                                self.reference,
+                                _return_float_locations=_float_locations) # when converting to proteinreferences, uses float locations
+                        )
                     except core.OutOfBoundsException:
                         pass
             else: 
@@ -260,22 +269,30 @@ class Figure(object):
                     show_labels = [show_labels for _ in regions]
                 else:
                     raise TypeError('show_labels has unsupported type.')
-                if r.label is not None:
-                    hover_labels.append(f'<b>{show_labels[i]} in {r.start}-{r.end}</b><br>{r.label}')
+                if isinstance(r.start, int):
+                    start = str(r.start)
+                    end = str(r.end)
+                elif isinstance(r.start, float):
+                    start = f'{r.start:.1f}'
+                    end = f'{r.end:.1f}'
                 else:
-                    hover_labels.append(f'<b>{show_labels[i]} in {r.start}-{r.end}</b>')                   
-                traces.append(_go.Scatter(mode='markers',
-                                      x=[r.start + 0.5 * (r.end - r.start) for r in regions],
-                                      y=[y_center for _ in regions],
-                                      name='',
-                                      text=hover_labels,
-                                      marker=dict(symbol='square',
-                                                  opacity=0.0,
-                                                  color=fill_color,
-                                                 ),
-                                      hovertemplate='%{text}'
-                                      )
-                         )
+                    raise TypeError('Region start has invalid type.')
+                if r.label is not None:
+                    hover_labels.append(f'<b>{show_labels[i]} in {start}-{end}</b><br>{r.label}')
+                else:
+                    hover_labels.append(f'<b>{show_labels[i]} in {start}-{end}</b>') 
+            traces.append(_go.Scatter(mode='markers',
+                                        x=[r.start + 0.5 * (r.end - r.start) for r in regions],
+                                        y=[y_center for _ in regions],
+                                        name='',
+                                        text=hover_labels,
+                                        marker=dict(symbol='square',
+                                                    opacity=0.0,
+                                                    color=fill_color,
+                                                    ),
+                                        hovertemplate='%{text}'
+                                        )
+                            )
            
         self._add_to_next_update(shapes=shapes,
                                  traces=traces)
@@ -382,16 +399,19 @@ class Figure(object):
         plus_t = sorted([transcripts[t] for t in transcript_ids if transcripts[t]['transcript'][0].reference.strand == '+'], 
                                key=lambda f: f['transcript'][0].get_length())
 
+        line_width = 1.0
+
         for features in minus_t+plus_t:
             plotted = []
             plotted.append(self.add_regions(regions=features['transcript'],
                                 height_ratio=self._retrieve_style(f'transcript_height_ratio', 'add_gtf_transcript_features', style_dict),
-                                fill_color='rgba(0,0,0,1.0)',
+                                fill_color=color,
                                 row='next',
                                 row_height=row_height,
                                 legend_entry=False,
                                 show_labels=False,
-                                line_color=color
+                                line_color=color,
+                                line_width=line_width
                                 ))
             if regulatory_sequence is True:
                 for f_type in ['three_prime_regulatory_sequence','five_prime_regulatory_sequence']:
@@ -402,18 +422,30 @@ class Figure(object):
                                     row_height=row_height,
                                     legend_entry=False,
                                     show_labels=f_type,
-                                    line_color=color
+                                    line_color=color,
+                                line_width=line_width
                                     ))
             for f_type in ['CDS',
                            'three_prime_utr','five_prime_utr',
-                           'start_codon','stop_codon',]:                          
+                           'start_codon','stop_codon',]:
+                # use non-black, semitransparent fill color for ProteinReference figures to see exon boundaries
+                if isinstance(self.reference, core.ProteinReference):
+                    fill_color = 'rgba(100,100,100,0.5)'
+                    edge_extension = 1/3/2
+                else:
+                    fill_color = color
+                    edge_extension = 0.5                
                 plotted.append(self.add_regions(regions=features[f_type],
                                 height_ratio=self._retrieve_style(f'{f_type}_height_ratio', 'add_gtf_transcript_features', style_dict),
-                                fill_color=color,
+                                fill_color=fill_color,
+                                line_color=color,
                                 row='current',
                                 row_height=row_height,
                                 legend_entry=False,
-                                show_labels=f_type
+                                show_labels=f_type,
+                                _float_locations=True,
+                                edge_extension=edge_extension,
+                                line_width=line_width
                                 ))
             if len(plotted) > 0 and any(plotted):
                 annotation = f'{features["transcript"][0].transcript_id}, {features["transcript"][0].transcript_biotype}'
@@ -529,40 +561,43 @@ class Figure(object):
         self.add_whitespace(whitespace/2)
         row_height = self._init_row(row=row, row_height=row_height)
         
-        all_mapped_locations = []
+        mapped_location_ints = []
         variant_types = dict()
+        
+        regions = deepcopy(regions) # no lasting changes made to objects
+        unmapped_locations = set()
         for r in regions:
+            r.reference.update(self.reference) # add transcript_region, coding_regions info to reference
             locations = r.split_to_locations()
-            mapped_locations = []
-            unmapped_locations = []
+            mapped_locations = set()
             if isinstance(r.reference, type(self.reference)):
-                mapped_locations.extend(locations)
+                [mapped_locations.add(l) for l in locations]
             else:
                 for l in locations:
                     try:
-                        mapped_locations.append(l.convert(self.reference))
+                        mapped_locations.add(l.convert(self.reference))
                     except core.OutOfBoundsException:
-                        unmapped_locations.append(l.start)
-            all_mapped_locations.extend([m.start for m in mapped_locations])
+                        unmapped_locations.add(l.start)
+            mapped_location_ints.extend([m.start for m in mapped_locations])
             if not variant_types.get(r.variant_type):
                 variant_types[r.variant_type] = []
-            variant_types[r.variant_type].extend(locations)
+            variant_types[r.variant_type].extend(mapped_locations)
 
         if len(unmapped_locations) > 0:
             _warnings.warn(f'{len(unmapped_locations)} locations could not be converted to the Figure.reference.')
 
-        max_n_loc, max_n = _Counter(all_mapped_locations).most_common(1)[0]
+        max_n_loc, max_n = _Counter(mapped_location_ints).most_common(1)[0]
 
-        self._adjust_x(x_min=min(all_mapped_locations),
-                       x_max=max(all_mapped_locations))
+        self._adjust_x(x_min=min(mapped_location_ints),
+                       x_max=max(mapped_location_ints))
 
         shapes = []
         traces = []
 
         # Line at base of stacked bars
         if base is None:
-            base = core.Region(start=min(all_mapped_locations), 
-                          end=max(all_mapped_locations))
+            base = core.Region(start=min(mapped_location_ints), 
+                          end=max(mapped_location_ints))
         shapes.append(Shape(type='rect',
                             x0=base.start,
                             x1=base.end,
@@ -777,4 +812,62 @@ class Figure(object):
             self.add_annotation(text='RBP-binding regions',
                                 side='left',
                                 margin=220)
+    
+    def add_uniprotkb_annotations(self, annotations: list, style_dict=None, legend_entry=False, annotation=True, row='next'):
         
+        function_name = 'add_uniprotkb_annotation'
+
+        # sort by type
+        a_dict = {a.annotation_type: [] for a in annotations}
+        [a_dict[a.annotation_type].append(a) for a in annotations]
+
+        row = row
+        for a_type in a_dict.keys():
+            try:
+                fill_color = self._retrieve_style(
+                    f'{a_type}_fill_color', function_name, style_dict
+                )
+            except MissingStyleAttributeException:
+                fill_color = 'rgba(200,200,200,1.0)' # grey
+
+            try:
+                line_color = self._retrieve_style(
+                    f'{a_type}_line_color', function_name, style_dict
+                )
+            except MissingStyleAttributeException:
+                line_color = fill_color
+
+            if legend_entry is True:
+                this_legend_entry = a_type
+            else: 
+                this_legend_entry = False
+
+            self.add_regions(
+                regions=annotations,
+                height_ratio=self._retrieve_style(
+                    'height_ratio', function_name, style_dict
+                ),
+                fill_color=fill_color,
+                line_color=line_color,
+                legend_entry=this_legend_entry,
+                line_width=0.5,
+                show_labels=a_type,
+                row=row,
+                row_height=self._retrieve_style(
+                    'row_height', function_name, style_dict
+                )
+            )
+            row = 'current'
+        if annotation is not False:
+            if isinstance(annotation, str):
+                text = annotation
+            else:
+                text = 'UniprotKB annotation'
+            self.add_annotation(
+                text=text,
+                side='left',
+                margin=220
+            )
+
+
+

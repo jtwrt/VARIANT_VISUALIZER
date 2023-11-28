@@ -45,7 +45,7 @@ class BioRegion(Region):
     def get_reference_type(self):
         return self.reference.reference_type
     
-    def convert(self, new_reference: _BioReference) -> BioRegion:
+    def convert(self, new_reference: _BioReference, _return_float_locations=False) -> BioRegion:
         """
         Description
         ---
@@ -66,11 +66,13 @@ class BioRegion(Region):
             start = convert_location(location=self.start,
                                       input_reference=self.reference,
                                       output_reference=new_reference,
-                                      encoding_base='first')
+                                      encoding_base='first',
+                                       _return_floats=_return_float_locations)
             end = convert_location(location=self.end,
                                     input_reference=self.reference,
                                     output_reference=new_reference,
-                                    encoding_base='third')
+                                    encoding_base='third',
+                                    _return_floats=_return_float_locations)
             new_reference.update(self.reference)
             out.update(start=start,
                        end=end,

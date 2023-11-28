@@ -3,8 +3,8 @@ from .. import core
 
 class Annotation(core.BioRegion):
 
-    def __init__(self, start: int, end: int, reference: _BioReference, annotation_type: str, description: str, source: str):
-        super().__init__(start, end, reference)
+    def __init__(self, start: int, end: int, reference: _BioReference, annotation_type: str, description: str, source: str, label=str):
+        super().__init__(start, end, reference, label)
         self.annotation_type = annotation_type
         self.description = description
         self.source = source
