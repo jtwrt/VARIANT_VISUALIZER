@@ -165,13 +165,26 @@ class Cluster():
     genomic features that are close in genomic sequence.
     A single cluster can thus be used for visualization
     and get the full picture of a genomic region.
+
+    Supposed to only be internally called by ClusterGenerator 
+    and when loading a Cluster from file. In the latter case,
+    A new instance is created, and data attributes are transfered.
+    This is to be able to patch methods without having to recalculate
+    the data, if not required.
     """
 
-    def __init__(self, cluster_id: int, gtf_cluster: ga.GtfCluster, variants: list, cre_dict: dict) -> None:
-        self.cluster_id = cluster_id
-        self.gtf_cluster = gtf_cluster
-        self.cre = cre_dict
-        self.variants = variants
+    def __init__(self, cluster_id=None|int, gtf_cluster=None|ga.GtfCluster, variants=None|list, cre_dict=None|dict, _cluster=None) -> None:
+        
+        if _cluster is None:
+            self.cluster_id = cluster_id
+            self.gtf_cluster = gtf_cluster
+            self.cre = cre_dict
+            self.variants = variants
+        else:
+            self.cluster_id = _cluster.cluster_id
+            self.gtf_cluster = _cluster.gtf_cluster
+            self.cre = _cluster.cre
+            self.variants = _cluster.variants
 
     def get_reference(self, gene_id=None, transcript_id=None):
         """
@@ -230,7 +243,9 @@ class Cluster():
             transcript_ids=transcript_ids
         )
         strands = set([r.reference.strand for r in filter_regions])
-        return [r for r in out if any([r.overlaps(f) for f in filter_regions])]       
+        return [r for r in out if 
+                any([r.overlaps(f) for f in filter_regions]) and
+                r.reference.strand in strands]       
     
     def get_cis_regulatory_elements(self, gene_ids='all', transcript_ids='all'):
         """
@@ -246,15 +261,20 @@ class Cluster():
             gene_ids=gene_ids,
             transcript_ids=transcript_ids
         )
+        strands = set([r.reference.strand for r in filter_regions])
         out = dict()
         for key in self.cre:
             this_cre = self.cre[key]
-            out[key] = [r for r in this_cre if any([r.overlaps(f) for f in filter_regions])]
+            out[key] = [r for r in this_cre if 
+                        any([r.overlaps(f) for f in filter_regions]) and
+                        r.reference.strand in strands]
         return out
 
 def _get_cluster_path(cluster_id: int) -> str:
     return os.path.join(config['general']['data_dir'], f'clusters/cluster_{cluster_id}.dill')
 
 def load_cluster(cluster_id: int) -> Cluster:
-    return dill_load_object(_get_cluster_path(cluster_id))
+    stored = dill_load_object(_get_cluster_path(cluster_id))
+    out = Cluster(_cluster=stored)
+    return out 
 
