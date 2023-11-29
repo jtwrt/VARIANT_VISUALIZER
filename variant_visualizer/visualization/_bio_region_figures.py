@@ -49,10 +49,10 @@ class Figure(object):
         layout.setdefault('template', 'simple_white')
         layout.setdefault('legend', dict(traceorder='reversed'))
         #layout.setdefault('hovermode', 'x') 
-        layout.setdefault('margin', dict(t=100,
+        layout.setdefault('margin', dict(t=20,
                                          b=80,
-                                         l=30,
-                                         r=80,
+                                         l=200,
+                                         r=200,
                                          pad=0)
                          )
         layout.setdefault('yaxis', dict(visible=False,
@@ -141,7 +141,10 @@ class Figure(object):
                           
     def _add_to_next_update(self, shapes=[], traces=[], layout={}, annotation=None) -> None:
         self._next_update['shapes'].extend(shapes)
-        self._next_update['traces'].extend(traces)
+        # Add traces if no identical trace is plotted already, prevent duplicate legend entries
+        for t in traces:
+            if all(t != prev_t for prev_t in self._next_update['traces']):
+                self._next_update['traces'].append(t)
         if annotation is not None:
             self._next_update['annotations'].append(annotation)
         for key in layout:
@@ -507,11 +510,11 @@ class Figure(object):
             if len(plotted) > 0 and any(plotted):
                 annotation = f'{features["transcript"][0].transcript_id}, {features["transcript"][0].transcript_biotype}'
                 self.add_annotation(text=annotation,
-                                    side='left',
-                                    margin=220)
+                                    side='left')
 
     def add_gtf_collapsed_genes(self, cluster: clusters.Cluster, style_dict=None, transcript_ids=[], gene_ids=[], regulatory_sequence=True, strand='both',
-                                uniprotkb_annotations:protein_annotation.UniprotAnnotations=None, legend_entry=True) -> None:
+                                uniprotkb_annotations:protein_annotation.UniprotAnnotations=None, legend_entry=True,
+                                annotation=', collapsed', annotation_margin=0) -> None:
         """
         Description
         ---
@@ -535,6 +538,10 @@ class Figure(object):
             Used to exchange ensembl id annotations within the plot for gene names if provided
         legend_entry : bool
             if True, enters start and stop codon into the legend
+        annotation : str
+            String that is added to the standard \'gene_id, (strand)\' annotation
+        annotation_margin : int
+            Minimum width to which the left margin is increased, if annotations are added in this plot
         """
 
         gtf_cluster = cluster.gtf_cluster
@@ -636,12 +643,12 @@ class Figure(object):
                 if uniprotkb_annotations is not None:
                     gene_name = uniprotkb_annotations.get_gene_name(ensembl_gene_id=g,
                                                                     cluster=cluster)
-                    annotation = f'{gene_name}, ({strand}), collapsed'
+                    text = f'{gene_name}, ({strand}){annotation}'
                 else:
-                    annotation = f'{g}, ({strand}), collapsed'
-                self.add_annotation(text=annotation,
+                    text = f'{g}, ({strand}){annotation}'
+                self.add_annotation(text=text,
                                     side='left',
-                                    margin=220)
+                                    margin=annotation_margin)
 
             
     def add_mutations(self, regions: list, base=None, colors=None, style_dict=None, legend_entry=True, opacity=1.0, show_labels=True, row='next'):
@@ -839,8 +846,7 @@ class Figure(object):
                                     )
                 if plotted is True:
                     self.add_annotation(text=f'\'{strand}\'-strand combined GTF-features',
-                                        side='left',
-                                        margin=220)
+                                        side='left')
                     row='current'    
 
     def add_pas(self, pas: list, style_dict=None, legend_entry=False, annotation=True, row='next') -> None:
@@ -879,8 +885,7 @@ class Figure(object):
                          row='current')
         if annotation is True:
             self.add_annotation(text='Polyadenylation & cleavage signals',
-                                side='left',
-                                margin=220)
+                                side='left')
 
     def add_miRNA_binding(self, miRNA_binding_regions: list, style_dict=None, legend_entry=False, annotation=True, row='next'):
         """Function to plot miRNA binding regions from the io.targetscan module."""
@@ -894,8 +899,7 @@ class Figure(object):
                          legend_entry=legend_entry)
         if annotation is True:
             self.add_annotation(text='miRNA-binding regions',
-                                side='left',
-                                margin=220)
+                                side='left')
 
     def add_rbp_binding(self, rbp_binding_regions: list, style_dict=None, legend_entry=False, annotation=True, row='next'):
 
@@ -908,8 +912,7 @@ class Figure(object):
                          legend_entry=legend_entry)
         if annotation is True:
             self.add_annotation(text='RBP-binding regions',
-                                side='left',
-                                margin=220)
+                                side='left')
     
     def add_uniprotkb_annotations(self, annotations: list, style_dict=None, legend_entry=False, annotation=True, row='next'):
         
@@ -963,8 +966,7 @@ class Figure(object):
                 text = 'UniprotKB annotation'
             self.add_annotation(
                 text=text,
-                side='left',
-                margin=220
+                side='left'
             )
 
 
