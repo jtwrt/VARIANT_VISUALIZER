@@ -127,6 +127,6 @@ def cluster_gtf(min_gap=config['general']['gtf_cluster_min_gap']) -> str:
     os.remove(f'{tmp_name}.sorted.bed')
     os.remove(f'{tmp_name}.cluster.bed')
 
-    return out_path
+    return out_path, sorted(set(gtf['clusters']))
 
 

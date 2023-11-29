@@ -183,8 +183,9 @@ def main():
                     raise Exception(f'Multiple values with ensemble ensembl transcript id \'{k}\'')
         out_path = os.path.join(config['general']['data_dir'],
                                 'ensembl_sprot_map.dill')
-        s_utils.dill_dump_object(out_path=out_path,
-                         object=ensembl_map)
+        s_utils.dill_dump_object(
+            out_path=out_path,
+            object=ensembl_map)
         config['uniprotkb']['ensembl_sprot_map'] = out_path
         s_utils.update_config(config)
         print('Done')   
@@ -192,8 +193,16 @@ def main():
     ## Generate clustered gtf
     if config['general']['clustered_gtf'] is None:
         print('Generating clustered gtf ...')
-        clustered_gtf_path = s_gtf.cluster_gtf()
+        clustered_gtf_path, clusters = s_gtf.cluster_gtf()
         config['general']['clustered_gtf'] = clustered_gtf_path
+        clusters_list_path = os.path.join(
+                config['general']['data_dir'], 'gtf_clusters_list.dill'
+            )
+        s_utils.dill_dump_object(
+            out_path=clusters_list_path,
+            object=clusters
+        )
+        config['general']['clusters_list'] = clusters_list_path
         s_utils.update_config(config)
         print('Done')
 

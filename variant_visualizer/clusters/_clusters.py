@@ -254,16 +254,13 @@ class Cluster():
             gene_ids=gene_ids,
             transcript_ids=transcript_ids
         )
-        strands = set([r.reference.strand for r in filter_regions])
         return [r for r in out if 
-                any([r.overlaps(f) for f in filter_regions]) and
-                r.reference.strand in strands]       
+                any([r.overlaps(f) for f in filter_regions])]       
     
     def get_cis_regulatory_elements(self, gene_ids='all', transcript_ids='all'):
         """
         Return cis-regulatory elements of this cluster, which overlap the given genes or transcripts.
-        Provide list or set of ensembl_ids to filter variants. 
-        Returns all cluster variants by default.
+        Provide list or set of ensembl_ids to filter returned regions.
         """
 
         if gene_ids == 'all' and transcript_ids == 'all':

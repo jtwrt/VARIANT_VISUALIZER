@@ -34,7 +34,7 @@ class PAS(CRE):
         return hash(self.__key())
 
     def __repr__(self):
-        return f'''BioRegion {self.start}-{self.end}, reference: {self.reference}, 
+        return f'''PAS {self.start}-{self.end}, reference: {self.reference}, 
             source: {self.source}, info: {self.info}, sequence: {self.sequence}, cleavage_site: {self.cleavage_site}'''
     
     def __eq__(self, other: PAS):

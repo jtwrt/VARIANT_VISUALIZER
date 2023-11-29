@@ -4,7 +4,7 @@ from plotly.graph_objects import Figure as _GoFigure
 
 
 from .._config import config
-from .. import core, clusters
+from .. import core, clusters, protein_annotation
 from .. import genome_annotation as ga
 
 import warnings as _warnings
@@ -23,7 +23,25 @@ class MissingStyleAttributeException(Exception):
 class Figure(object):
 
     def __init__(self, reference: core._BioReference, layout=None, style_dict=None):
+        """
+        Description
+        ---
+        Class that is used to construct plots of genomic, transcript or protein BioRegions.
         
+        Parameters
+        ---
+        reference : variant_visualizer.core._BioReference
+            Either GenomicReference, TranscriptReference or ProteinReference.
+            All BioRegions to be displayed in this plot must be mappable
+            to the chosen reference.
+        layout : dict = None
+            Used for initialization of the plotly.graph_objects.Figure if provided.
+            Values in this dict overwrite the default values used in this class.
+        style_dict : dict = None
+            Overwrites config.visualization values for the instance.
+            Only deined values given are overwritten.
+        """
+
         self.style_dict = style_dict
         
         if layout is None:
@@ -90,9 +108,22 @@ class Figure(object):
     def figure(self, layout):
         self._figure = _go.Figure(data=None, layout=layout, frames=None, skip_invalid=False)
 
-    def export(self, path, width=1200, heightPerY=100):
-        """Export figure as html or common figure files with consistent look."""
-        height = (self._y_max * heightPerY 
+    def export(self, path: str, width:int=1200, height_per_y:int=100):
+        """
+        Description
+        ---
+        Export figure as html or common figure files with consistent look.
+        Filetype is determined from given path.
+        
+        Parameters
+        ---
+        path : str
+        width : int
+            width of exported figure in pixels
+        height_per_y : int
+            determines how narrow tracks will be displayed in the figure
+        """
+        height = (self._y_max * height_per_y 
                   + self.figure.layout.margin['t']
                   + self.figure.layout.margin['b']
                   )
@@ -118,6 +149,10 @@ class Figure(object):
         return
                           
     def update_figure(self) -> None:
+        """
+        Update the figure with all shapes, annotations and legend entries
+        that were provided in prvious commands.
+        """
         self._next_update['layout']['shapes'] = self._next_update['shapes']
         self._next_update['layout']['annotations'] = self._next_update['annotations']
         self.figure.update_layout(self._next_update['layout'])
@@ -170,28 +205,50 @@ class Figure(object):
                                                             self._x_max+(dist*self._right_buffer)]}})
     
     def add_whitespace(self, whitespace: float) -> None:
-        """Add an empty track to the figure."""
+        """Add an empty track to the figure. Provide the width as float."""
         self._y_min += whitespace
         self._y_max += whitespace
 
     def add_regions(
             self, regions: list, height_ratio: float, fill_color: str, 
-            line_color=None, legend_entry=False, line_width=0.5, opacity=1.0, 
+            line_color=None, legend_entry:str=False, line_width=0.5, opacity=1.0, 
             show_labels=False, edge_extension=0.5, row='next', 
-            row_height=1.0, _float_locations=False) -> None:
+            row_height=1.0, _float_locations=False) -> bool:
         """
         Description
         ---
-        Add a list of regions to the figure in either the current, or the next row
-        If the given regions reference property does not match the figure.reference,
-        tries to convert to the figure reference.
-        Returns true if regions where added to the plot.
+        Add a list of BioRegions to the figure. Returns a bool stating
+        if regions where added to the Figure instance.
 
         Parameters
         ---
-        show_labels : False / True / str
-                      Do not show labels on hovering over region if False. 
-                      If String is provided, displays string on hover.
+        regions : list
+            containing variant_visualizer.core.BioRegion object to be plotted
+        height_ratio : float
+            value between 0 and 1. determines how much space of the track
+            will be taken up by the plottet regions.
+        fill_color : str
+            Fill color of the region shapes.
+            Refer to plotly for valid input colors
+        line_color : str = None
+            If given, color of the region shape outline. Otherwise uses fill_color
+        legend_entry : str = False
+            Constructs a legend entry from the given string if given.
+        line_width : float
+            Width of the region shape outline
+        opacity : float
+            opacity of the region shape
+        show_labels : bool or str
+            Show hoverlabels on interactive plots. If True, tries to use region.label
+            attribute for hoverlabels. If show_labels is a string, shows the value in
+            each hoverlabel.
+        edge_extension : float
+            Determines how much bigger the displayed shape will. For example, 0.5
+            displayes Region(1,2) from 0.5 to 2.5
+        row : str
+            \'next\' or \'current\': in which track regions should be plotted
+        row_hieght : float
+            track height
         """
         
         if len(regions) == 0:
@@ -453,13 +510,31 @@ class Figure(object):
                                     side='left',
                                     margin=220)
 
-    def add_gtf_collapsed_genes(self, cluster: clusters.Cluster, style_dict=None, transcript_ids=[], gene_ids=[], regulatory_sequence=True, strand='both') -> None:
+    def add_gtf_collapsed_genes(self, cluster: clusters.Cluster, style_dict=None, transcript_ids=[], gene_ids=[], regulatory_sequence=True, strand='both',
+                                uniprotkb_annotations:protein_annotation.UniprotAnnotations=None, legend_entry=True) -> None:
         """
         Description
         ---
+        Visualize gene transcripts, one gene per track by collapsing multiple transcripts.
 
-        ADD OPTION TO VISUALIZE ALL STARTCODONS
-        If strand is either + or -, only plots genes that are located on that strand.
+        Parameters
+        ---
+        cluster : cluster.Cluster
+            variant_visualier.cluster.Cluster from where genomic regions are extraced
+        style_dict : dict
+            function style dict, to overwrite options from config.yml
+        transcript_ids : list
+            ensembl ids of transcripts that will be collapsed
+        gene_ids : list
+            ensembl ids of genes that will be collapses
+        regulatory_sequence : bool
+            Show regulatory sequence
+        strand : str
+            \'both\',\'+\',\'-\' - select genes from which strand should be plotted
+        uniprotkb_annotations : variant_visualizer.protein_annotation.UniprotAnnotations
+            Used to exchange ensembl id annotations within the plot for gene names if provided
+        legend_entry : bool
+            if True, enters start and stop codon into the legend
         """
 
         gtf_cluster = cluster.gtf_cluster
@@ -479,7 +554,14 @@ class Figure(object):
         gene_ids = collapsed_genes.keys()
               
         row_height = self._retrieve_style('row_height', 'add_gtf_collapsed_genes', style_dict)
-                
+        
+        # dont enter multiple identical legend entries
+        legend_entry_tracker = {
+            'start_codon':True,
+            'stop_codon':True
+        }
+        
+        
         for g in gene_ids:
             features = collapsed_genes[g]
             row='next'
@@ -530,6 +612,17 @@ class Figure(object):
                     row = 'current'
                     plotted=True
 
+                    if legend_entry is True and legend_entry_tracker[f_type] is True:
+                        legend_text = {
+                            'start_codon':'Start codon',
+                            'stop_codon':'Stop codon'
+                        }
+                        self.add_legend_entry(
+                            text=legend_text[f_type],
+                            fill_color=color,
+                        )
+                        legend_entry_tracker[f_type] = False
+
             if plotted is True:
                 # Which strand is the transcript on
                 break2 = False
@@ -540,7 +633,12 @@ class Figure(object):
                         strand = r.reference.strand
                         break2 = True
                         break
-                annotation = f'{g}, ({strand}), collapsed'
+                if uniprotkb_annotations is not None:
+                    gene_name = uniprotkb_annotations.get_gene_name(ensembl_gene_id=g,
+                                                                    cluster=cluster)
+                    annotation = f'{gene_name}, ({strand}), collapsed'
+                else:
+                    annotation = f'{g}, ({strand}), collapsed'
                 self.add_annotation(text=annotation,
                                     side='left',
                                     margin=220)

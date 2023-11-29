@@ -6,6 +6,10 @@ import pandas as pd
 import os
 from copy import deepcopy
 from ..setup._setup_gtf import load_gtf
+from .. import setup
+
+def get_clusters_list():
+    return setup.dill_load_object(config['general']['clusters_list'])
 
 def get_gtf_path(input_file, out_dir, file_ending=''):
     """Return a path where the file format from the input file is exchanged to file_ending, and the directory is out_dir."""

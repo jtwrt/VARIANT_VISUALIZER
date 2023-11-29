@@ -29,7 +29,7 @@ class MiRNABinding(CRE):
         return hash(self.__key())
 
     def __repr__(self):
-        return f'''BioRegion {self.start}-{self.end}, reference: {self.reference}, 
+        return f'''MiRNABinding {self.start}-{self.end}, reference: {self.reference}, 
             source: {self.source}, info: {self.info}, binding: {self.binding}, score: {self.score}'''
     
     def __eq__(self, other: MiRNABinding):

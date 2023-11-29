@@ -15,7 +15,7 @@ study_disease_table = pd.read_csv(
     os.path.join(config['tcga_mc3']['tcga_code_tables'],'diseaseStudy.tsv'),
     sep='\t')
 
-def _select_tcga_samples(tcga_sample_class):
+def select_tcga_samples(tcga_sample_class):
     """
     Description
     ---
@@ -31,8 +31,6 @@ def _select_tcga_samples(tcga_sample_class):
         'msi' for micro satelite instable samples
         'pole' for Polymerase-epsilon muated samples
         'msi_pole' for msi or pole samples
-        'mss_no_SKCM' for mss samples, excluding SKCM samples
-        'mss_no_SKCM_DLBC' for mss samples, excluding SKCM and DLBC samples
     """
     t = _load_tcga_sbs()
 
@@ -50,12 +48,6 @@ def _select_tcga_samples(tcga_sample_class):
     elif tcga_sample_class == 'msi_pole':
         samples = t.loc[(t['MSI SBS'] > 0)&
                         (t['PolE SBS'] > 0), 'Sample Names'].tolist()
-    elif tcga_sample_class == 'mss_no_SKCM':
-        samples = _load_tcga_sbs('mss')
-        samples = [s for s in samples if get_tcga_cancer_type(s) != 'SKCM']
-    elif tcga_sample_class == 'mss_no_SKCM_DLBC':
-        samples = _load_tcga_sbs('mss_no_SKCM')
-        samples = [s for s in samples if get_tcga_cancer_type(s) != 'DLBC']
     else:
         raise ValueError(
             f'Unknown tcga_sample_class {tcga_sample_class}. Valid options: any, mss, msi, pole, msi/pole')
