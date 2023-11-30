@@ -23,7 +23,8 @@ class RBPBinding(CRE):
         self.score = score
 
     def __key(self):
-        return ('BioRegion', self.start, self.end, self.reference, self.source, self.info, self.binding, self.score)
+        info = f'{" ".join([f"{key}:{self.info[key]}" for key in self.info])}'
+        return ('BioRegion', self.start, self.end, self.reference, self.source, info, self.binding, self.score)
     
     def __hash__(self) -> tuple:
         return hash(self.__key())

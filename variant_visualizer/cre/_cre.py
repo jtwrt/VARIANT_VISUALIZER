@@ -18,7 +18,8 @@ class CRE(core.BioRegion):
         self.info = info
 
     def __key(self):
-        return ('BioRegion', self.start, self.end, self.reference, self.source, self.info)
+        info = f'{" ".join([f"{key}:{self.info[key]}" for key in self.info])}'
+        return ('CRE', self.start, self.end, self.reference, self.source, info)
     
     def __hash__(self) -> tuple:
         return hash(self.__key())

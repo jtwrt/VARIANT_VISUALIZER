@@ -28,7 +28,8 @@ class PAS(CRE):
         self.source = source
 
     def __key(self):
-        return ('BioRegion', self.start, self.end, self.reference, self.source, self.info, self.sequence, self.cleavage_site)
+        info = f'{" ".join([f"{key}:{self.info[key]}" for key in self.info])}'
+        return ('PAS', self.start, self.end, self.reference, self.source, info, self.sequence, self.cleavage_site)
     
     def __hash__(self) -> tuple:
         return hash(self.__key())

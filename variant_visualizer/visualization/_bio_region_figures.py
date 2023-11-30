@@ -376,7 +376,7 @@ class Figure(object):
                         )
         self._add_to_next_update(traces=traces)
 
-    def add_annotation(self, text: str, side: str, margin=0) -> None:
+    def add_annotation(self, text: str, side: str, margin=0, y='middle', y_anchor='middle') -> None:
         """Add a label to the plot, which will be aligned with the plot itself, not its coordinates."""
         if side == 'left':
             x_anchor = 'right'
@@ -393,17 +393,27 @@ class Figure(object):
         else:
             raise ValueError(f'side can be either \'left\' or \'right\', not \'{side}\'.')
 
-        annotation = _go.layout.Annotation(text=text,
-                                           #font={'size': 5},
-                                           xref='paper',
-                                           xanchor=x_anchor,
-                                           x=x,
-                                           yref='y',
-                                           yanchor='middle',
-                                           y=self._y_min+((self._y_max-self._y_min)/2),
-                                           showarrow=False,
-                                           bgcolor='rgba(255,255,255,0.95)'
-                                           )
+        if y == 'middle':
+            y=self._y_min+((self._y_max-self._y_min)/2)
+        elif y == 'bottom':
+            y=self._y_min
+        elif y == 'top':
+            y=self._y_max
+        else:
+            raise ValueError('Invalid y location: choose middle/bottom/top')
+            
+        annotation = _go.layout.Annotation(
+            text=text,
+            #font={'size': 5},
+            xref='paper',
+            xanchor=x_anchor,
+            x=x,
+            yref='y',
+            yanchor=y_anchor,
+            y=y,
+            showarrow=False,
+            bgcolor='rgba(255,255,255,0.95)'
+        )
         self._add_to_next_update(annotation=annotation)
 
     def add_gtf_transcript_features(self, cluster: clusters.Cluster, style_dict=None, transcript_ids=[], gene_ids=[], regulatory_sequence=True) -> None:
@@ -651,7 +661,7 @@ class Figure(object):
                                     margin=annotation_margin)
 
             
-    def add_mutations(self, regions: list, base=None, colors=None, style_dict=None, legend_entry=True, opacity=1.0, show_labels=True, row='next'):
+    def add_variants(self, regions: list, base=None, style_dict=None, legend_entry=True, annotation=None, row='next'):
         """
         Description
         
