@@ -113,6 +113,17 @@ def get_row_variant(i: int, row: pd.Series):
         variant_type = ''
     if pd.isna(consequence):
         consequence = ''
+    disease = get_tcga_cancer_type(row['Tumor_Sample_Barcode'])
+    if variant_type == 'INS':
+        label = f'{row["Tumor_Seq_Allele2"]}'
+    elif variant_type == 'DEL':
+        label = f'{row["Reference_Allele"]}'
+    elif variant_type == 'SNP':
+        label = f'{row["Reference_Allele"]} > {row["Tumor_Seq_Allele2"]}'
+    else:
+        label = f'{row["Reference_Allele"]} > {row["Tumor_Seq_Allele1"]}, {row["Tumor_Seq_Allele2"]}'
+    label += f'; {consequence}; Cancer type: {disease}'
+
     return Variant(
         start=row['Start_Position'],
         end=row['End_Position'],
@@ -121,12 +132,12 @@ def get_row_variant(i: int, row: pd.Series):
         consequence=consequence,
         sample_id=row['Tumor_Sample_Barcode'],
         normal_sample_id=row['Matched_Norm_Sample_Barcode'],
-        disease=get_tcga_cancer_type(row['Tumor_Sample_Barcode']),
+        disease=disease,
         source=f'mc3_row:{i}',
         ref_allele=row['Reference_Allele'],
         alt_allele_1=row['Tumor_Seq_Allele1'],
         alt_allele_2=row['Tumor_Seq_Allele2'],
-        label = f'{row["Reference_Allele"]} > {row["Tumor_Seq_Allele1"]}, {row["Tumor_Seq_Allele2"]}; {consequence}'
+        label = label
     
         )
 

@@ -108,7 +108,7 @@ class Figure(object):
     def figure(self, layout):
         self._figure = _go.Figure(data=None, layout=layout, frames=None, skip_invalid=False)
 
-    def export(self, path: str, width:int=1200, height_per_y:int=100):
+    def export(self, path: str, width:int=1200, height_per_y:int=100, html_width=None, include_plotlyjs=True):
         """
         Description
         ---
@@ -122,6 +122,12 @@ class Figure(object):
             width of exported figure in pixels
         height_per_y : int
             determines how narrow tracks will be displayed in the figure
+        html_width : str = None
+            can be given in percent \'50%\' and will overrule width for html exports
+        include_plotlyjs : str = True
+            determines how the plotly.js will be accesses for the interactive plot. 
+            Value is directly given to plotly.graph_objects.Figure.write_html as include_plotlyjs value.
+            Default value exports a independent html file.
         """
         height = (self._y_max * height_per_y 
                   + self.figure.layout.margin['t']
@@ -129,10 +135,12 @@ class Figure(object):
                   )
         if path.split('.')[-1] == 'html':
             if width == None: width = f'{width}px' #'100%'
+            if html_width is not None: width = html_width
             _pio.write_html(file=path,
                             fig=self.figure,
                             default_width=width,
-                            default_height=f'{height}px')
+                            default_height=f'{height}px',
+                            include_plotlyjs=include_plotlyjs)
         else:
             if width == None: width = width
             self.figure.write_image(path,
@@ -668,6 +676,8 @@ class Figure(object):
         Given a list of regions, selects groups of regions with the same 
         region.variant_type attribute. Each region is split into regions with length 1
         and then displayed as stacked bars, colored by its variant_type.
+
+        Returns True if variants were mapped, False if not. Will always create a new track.
         """
         height_ratio = self._retrieve_style('height_ratio', 'add_mutations', style_dict)
         row_height = self._retrieve_style('row_height', 'add_mutations', style_dict)
@@ -698,17 +708,8 @@ class Figure(object):
                 variant_types[r.variant_type] = []
             variant_types[r.variant_type].extend(mapped_locations)
 
-        if len(unmapped_locations) > 0:
-            _warnings.warn(f'{len(unmapped_locations)} locations could not be converted to the Figure.reference.')
-
-        max_n_loc, max_n = _Counter(mapped_location_ints).most_common(1)[0]
-
-        self._adjust_x(x_min=min(mapped_location_ints),
-                       x_max=max(mapped_location_ints))
-
         shapes = []
         traces = []
-
         # Line at base of stacked bars
         if base is None:
             base = core.Region(start=min(mapped_location_ints), 
@@ -723,6 +724,18 @@ class Figure(object):
                             fillcolor='rgba(0,0,0,1.0)'
                             )
                       )
+
+        if len(unmapped_locations) > 0:
+            _warnings.warn(f'{len(unmapped_locations)} locations could not be converted to the Figure.reference.')        
+        if len(mapped_location_ints) == 0:
+            _warnings.warn('No variants were given or could be mapped.')
+            self.add_whitespace(whitespace/2)
+            return False
+
+        max_n_loc, max_n = _Counter(mapped_location_ints).most_common(1)[0]
+
+        self._adjust_x(x_min=min(mapped_location_ints),
+                       x_max=max(mapped_location_ints))
 
         stacks_height = {}
         for variant_type in sorted(variant_types.keys()):
@@ -819,6 +832,7 @@ class Figure(object):
         self._add_to_next_update(shapes=shapes,
                                 traces=traces,
                                 annotation=annotation)
+        return True
 
     def add_gtf_cluster(self, cluster: clusters.Cluster, strands=['-', '+'], style_dict=None, gene_ids=[], transcript_ids=[]):
 

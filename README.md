@@ -33,7 +33,7 @@ conda env create -f conda_environment.yml
 ```
 Activate the enviroment:
 ```bash
-conda activate variant_visualizer
+conda activate vavis
 ```
 
 ### Download dependencies

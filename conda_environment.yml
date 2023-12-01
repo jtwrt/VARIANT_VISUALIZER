@@ -19,8 +19,8 @@ dependencies:
   - brotli=1.0.9=h5eee18b_7
   - brotli-bin=1.0.9=h5eee18b_7
   - bzip2=1.0.8=h7b6447c_0
-  - ca-certificates=2023.11.17=hbcca054_0
-  - certifi=2023.11.17=pyhd8ed1ab_0
+  - ca-certificates=2023.08.22=h06a4308_0
+  - certifi=2023.11.17=py311h06a4308_0
   - cffi=1.16.0=py311h5eee18b_0
   - charset-normalizer=3.3.2=pyhd8ed1ab_0
   - colorama=0.4.6=pyhd8ed1ab_0
@@ -165,6 +165,7 @@ dependencies:
   - python-kaleido=0.2.1=pyhd8ed1ab_0
   - python-tzdata=2023.3=pyhd3eb1b0_0
   - pytz=2023.3.post1=py311h06a4308_0
+  - pyyaml=6.0.1=py311h5eee18b_0
   - pyzmq=25.1.0=py311h6a678d5_0
   - qt-main=5.15.2=h53bd1ea_10
   - readline=8.2=h5eee18b_0
@@ -186,6 +187,7 @@ dependencies:
   - tk=8.6.12=h1ccaba5_0
   - tomli=2.0.1=pyhd8ed1ab_0
   - tornado=6.3.3=py311h5eee18b_0
+  - tqdm=4.65.0=py311h92b7b1e_0
   - traitlets=5.7.1=py311h06a4308_0
   - typing-extensions=4.8.0=hd8ed1ab_0
   - typing_extensions=4.8.0=pyha770c72_0
@@ -197,6 +199,7 @@ dependencies:
   - wheel=0.41.2=py311h06a4308_0
   - widgetsnbextension=4.0.5=py311h06a4308_0
   - xz=5.4.2=h5eee18b_0
+  - yaml=0.2.5=h7b6447c_0
   - zeromq=4.3.4=h2531618_0
   - zipp=3.17.0=pyhd8ed1ab_0
   - zlib=1.2.13=h5eee18b_0
