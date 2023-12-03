@@ -3,6 +3,7 @@ from .. import variants, cre, core
 from .._config import config
 import os, yaml, warnings
 from ..setup._setup_utils import dill_dump_object, dill_load_object, block_print, enable_print
+from copy import deepcopy
 
 class ClusterGenerator():
     """
@@ -197,6 +198,7 @@ class Cluster():
         If reference_type is either genomic/transcript/protein, 
         tries to convert the default value to the requested reference type.
         """
+        out = None
         if transcript_id is None and gene_id is None:
             out =  self.gtf_cluster.reference
         elif transcript_id is None and gene_id is not None:
@@ -209,9 +211,14 @@ class Cluster():
                 if r.transcript_id == transcript_id:
                     out = r.reference.convert_reference_type('transcript')
                     break
-        else:
-            raise ValueError('Transript not found in this cluster.')
-    
+        elif transcript_id is not None and gene_id is not None:
+            for r in self.gtf_cluster.all_regions:
+                if r.transcript_id == transcript_id and \
+                        r.gene_id == gene_id:
+                    out = r.reference
+        if out is None:
+            raise ValueError('Transript or gene is not part of cluster.')
+
         if reference_type == 'default':
             return out
         else:
@@ -221,7 +228,7 @@ class Cluster():
 
     def get_gtf_cluster(self):
         """Return the associated GtfCluser object"""
-        return self.gtf_cluster
+        return deepcopy(self.gtf_cluster)
     
     def _get_filter_regions(self, gene_ids='all', transcript_ids='all'):
         """Return gtf features with matching gene_ids and transcript_ids"""
@@ -246,7 +253,7 @@ class Cluster():
         Provide list or set of ensembl_ids to filter variants. 
         Returns all cluster variants by default.
         """
-        out = self.variants
+        out = deepcopy(self.variants)
         if gene_ids == 'all' and transcript_ids == 'all':
             return out
 
@@ -264,7 +271,7 @@ class Cluster():
         """
 
         if gene_ids == 'all' and transcript_ids == 'all':
-            return self.cre
+            return deepcopy(self.cre)
 
         filter_regions = self._get_filter_regions(
             gene_ids=gene_ids,
@@ -273,11 +280,32 @@ class Cluster():
         strands = set([r.reference.strand for r in filter_regions])
         out = dict()
         for key in self.cre:
-            this_cre = self.cre[key]
+            this_cre = deepcopy(self.cre[key])
             out[key] = [r for r in this_cre if 
                         any([r.overlaps(f) for f in filter_regions]) and
                         r.reference.strand in strands]
         return out
+
+    def get_pas(self, gene_ids='all', transcript_ids='all'):
+        cis_reg_elements = self.get_cis_regulatory_elements(
+            gene_ids=gene_ids,
+            transcript_ids=transcript_ids
+        )
+        return cis_reg_elements['PAS']
+    
+    def get_miRNA_binding(self, gene_ids='all', transcript_ids='all'):
+        cis_reg_elements =  self.get_cis_regulatory_elements(
+            gene_ids=gene_ids,
+            transcript_ids=transcript_ids
+        )
+        return cis_reg_elements['MiRNABinding']
+
+    def get_rbp_binding(self, gene_ids='all', transcript_ids='all'):
+        cis_reg_elements = self.get_cis_regulatory_elements(
+            gene_ids=gene_ids,
+            transcript_ids=transcript_ids
+        )
+        return cis_reg_elements['RBPBinding']
 
 def _get_cluster_path(cluster_id: int) -> str:
     return os.path.join(config['general']['data_dir'], f'clusters/cluster_{cluster_id}.dill')

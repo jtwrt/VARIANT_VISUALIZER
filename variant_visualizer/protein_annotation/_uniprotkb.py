@@ -1,6 +1,6 @@
 from copy import deepcopy as _deepcopy
 from Bio import SeqIO
-from ._protein_annotation import Annotation
+from ._protein_annotation import ProteinAnnotation
 from ..setup import _setup_utils as s_utils
 from .._config import config
 from .. import core, clusters
@@ -32,6 +32,42 @@ class UniprotAnnotations():
         Return annotated regions as of the queried transcript from uniprotkb as BioRegions.
         If features is empty, returns all annotations. 
         Otherwise only returns annotations where type is in features.
+
+        Valid feature types are:
+            'DNA-binding region',
+            'active site',
+            'binding site',
+            'chain',
+            'coiled-coil region',
+            'compositionally biased region',
+            'cross-link',
+            'disulfide bond',
+            'domain',
+            'glycosylation site',
+            'helix',
+            'initiator methionine',
+            'intramembrane region',
+            'lipid moiety-binding region',
+            'modified residue',
+            'mutagenesis site',
+            'non-standard amino acid',
+            'non-terminal residue',
+            'peptide',
+            'propeptide',
+            'region of interest',
+            'repeat',
+            'sequence conflict',
+            'sequence variant',
+            'short sequence motif',
+            'signal peptide',
+            'site',
+            'splice variant',
+            'strand',
+            'topological domain',
+            'transit peptide',
+            'transmembrane region',
+            'turn',
+            'zinc finger region'
         """
         gtf_cluster = cluster.gtf_cluster
         annotations = self.ensembl_map.get(ensembl_id).features
@@ -54,7 +90,7 @@ class UniprotAnnotations():
                 description = a.qualifiers['description']
             else:
                 description = ''
-            out.append(Annotation(
+            out.append(ProteinAnnotation(
                 start=int(a.location._start)+1,
                 end=int(a.location._end),
                 reference=core.get_reference('protein', 

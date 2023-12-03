@@ -3,6 +3,7 @@ from ._regions import Region
 from ._bio_references import _BioReference, GenomicReference, TranscriptReference, ProteinReference, get_reference
 from ._bio_conversion import convert_location
 from copy import deepcopy
+from warnings import warn
 
 class BioRegion(Region):
     """
@@ -41,6 +42,52 @@ class BioRegion(Region):
             return False
         else:
             raise TypeError(f'Testing equality not defined between given objects.')
+
+    def overlaps(self, other: BioRegion):
+        if isinstance(other, Region) and not isinstance(other, BioRegion):
+            raise NotImplementedError('BioRegion overlap with basic Regions is not defined.')
+
+        # shortcut for genomic references:
+        if (isinstance(self.reference, GenomicReference) and isinstance(other.reference, GenomicReference)) and \
+                self.reference.chromosome == other.reference.chromosome:
+            return super().overlaps(other)
+
+        other = deepcopy(other)
+        try:
+            other.reference.update(self.reference) # check if references are matching
+        except(ValueError):
+            return False
+        
+        if isinstance(other.reference, type(self.reference)):
+            return super().overlaps(other)
+        elif not other.reference.convertible(self.reference): 
+            warn('BioRegion.overlaps() returned False due to non-convertible references. Make sure the BioRegion references are chosen appropriately')
+            return False
+        else:
+            return super().overlaps(other.convert(self.reference))
+
+    def within(self, other: BioRegion):
+        if isinstance(other, Region) and not isinstance(other, BioRegion):
+            raise NotImplementedError('BioRegion within() with basic Regions is not defined.')
+
+        # shortcut for genomic references:
+        if (isinstance(self.reference, GenomicReference) and isinstance(other.reference, GenomicReference)) and \
+                self.reference.chromosome == other.reference.chromosome:
+            return super().within(other)
+
+        other = deepcopy(other)
+        try:
+            other.reference.update(self.reference) # check if references are matching
+        except(ValueError):
+            return False
+        
+        if isinstance(other.reference, type(self.reference)):
+            return super().within(other)
+        elif not other.reference.convertible(self.reference): 
+            warn('BioRegion.within() returned False due to non-convertible references. Make sure the BioRegion references are chosen appropriately')
+            return False
+        else:
+            return super().within(other.convert(self.reference))
 
     def get_reference_type(self):
         return self.reference.reference_type

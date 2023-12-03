@@ -1,2 +1,2 @@
-from ._protein_annotation import Annotation
+from ._protein_annotation import ProteinAnnotation
 from ._uniprotkb import UniprotAnnotations

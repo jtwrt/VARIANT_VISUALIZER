@@ -23,8 +23,10 @@ def convert_location(location: int, input_reference: _BioReference, output_refer
             transcript_region = input_reference.transcript_region
         elif input_reference.strand == '-':
             location = -location
-            coding_regions = [_invert_region(r) for r in input_reference.coding_regions]
-            transcript_region = _invert_region(input_reference.transcript_region) 
+            if input_reference.coding_regions is not None:
+                coding_regions = [_invert_region(r) for r in input_reference.coding_regions]
+            if input_reference.transcript_region is not None:
+                transcript_region = _invert_region(input_reference.transcript_region) 
     
 
         if isinstance(output_reference, TranscriptReference):
@@ -44,7 +46,7 @@ def convert_location(location: int, input_reference: _BioReference, output_refer
 
             if input_reference.strand == '+':
                 transcript_region = input_reference.transcript_region 
-            elif input_reference.strand == '-':
+            elif input_reference.strand == '-' and input_reference.transcript_region is not None:
                 transcript_region = _invert_region(input_reference.transcript_region) 
             else:
                 raise ValueError
@@ -77,7 +79,7 @@ def convert_location(location: int, input_reference: _BioReference, output_refer
             
             if input_reference.strand == '+':
                 coding_regions = input_reference.coding_regions
-            elif input_reference.strand == '-':
+            elif input_reference.strand == '-' and input_reference.coding_regions is not None:
                 coding_regions = [_invert_region(r) for r in input_reference.coding_regions]
             else:
                 raise ValueError

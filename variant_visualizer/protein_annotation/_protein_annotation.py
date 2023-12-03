@@ -1,7 +1,7 @@
 from variant_visualizer.core._bio_references import _BioReference
 from .. import core
 
-class Annotation(core.BioRegion):
+class ProteinAnnotation(core.BioRegion):
 
     def __init__(self, start: int, end: int, reference: _BioReference, annotation_type: str, description: str, source: str, label=str):
         super().__init__(start, end, reference, label)
@@ -21,7 +21,7 @@ class Annotation(core.BioRegion):
     
     def __eq__(self, other: core.BioRegion):
         """Compares BioRegions. Must be implemented by subclasses."""
-        if isinstance(other, Annotation):
+        if isinstance(other, ProteinAnnotation):
             return self.__key() == other.__key()
         elif isinstance(other, core.BioRegion) or other is None:
             return False
