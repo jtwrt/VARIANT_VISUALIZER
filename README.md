@@ -3,6 +3,7 @@
 This version of the Variant-Visualizer library was submitted as part of the Master Thesis of Julian Thorwarth on Jan. 12th, 2024.
 
 https://github.com/gruber-sciencelab/Variant-Visualizer
+
 https://github.com/jtwrt/VARIANT_VISUALIZER
 
 A second repository was submitted for the identification of frequently mutated cis-regulatory elements:
