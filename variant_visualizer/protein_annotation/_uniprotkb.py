@@ -25,7 +25,7 @@ class UniprotAnnotations():
             gene_name_map[gene_name].add(transcript_id)
         self.gene_name_map = gene_name_map
     
-    def get_transcript_features(self, ensembl_id: str, features: list, cluster: clusters.Cluster) -> list:
+    def get_transcript_features(self, ensembl_id: str, cluster: clusters.Cluster, features:list=[]) -> list:
         """
         Description
         ---

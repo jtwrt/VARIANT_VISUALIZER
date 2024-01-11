@@ -10,14 +10,14 @@ class ProteinAnnotation(core.BioRegion):
         self.source = source
 
     def __key(self):
-        return ('Annotation', self.start, self.end, self.reference, self.annotation_type,
-                self.text, self.source)
+        return ('ProteinAnnotation', self.start, self.end, self.reference, self.annotation_type,
+                self.description, self.source)
     
     def __hash__(self) -> tuple:
         return hash(self.__key())
 
     def __repr__(self):
-        return f'BioRegion {self.start}-{self.end}, reference: {self.reference}'
+        return f'ProteinAnnotation {self.start}-{self.end}, reference: {self.reference}, annotation_type: {self.annotation_type}, description: {self.description}, source: {self.source}'
     
     def __eq__(self, other: core.BioRegion):
         """Compares BioRegions. Must be implemented by subclasses."""

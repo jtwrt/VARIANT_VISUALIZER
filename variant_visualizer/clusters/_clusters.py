@@ -247,13 +247,19 @@ class Cluster():
             out = [r for r in out if r.transcript_id in transcript_ids]
         return out
 
-    def get_variants(self, gene_ids='all', transcript_ids='all'):
+    def get_variants(self, gene_ids='all', transcript_ids='all', sample_class='any'):
         """
-        Return variants that overlap the given genes or transcripts. 
-        Provide list or set of ensembl_ids to filter variants. 
+        Return variants that are within the region 
+        limited by the provided set of transcripts/genes.
         Returns all cluster variants by default.
         """
         out = deepcopy(self.variants)
+        
+        valid_samples = variants.select_tcga_samples(
+            tcga_sample_class=sample_class
+        )
+        out = [v for v in out if v.sample_id in valid_samples]
+
         if gene_ids == 'all' and transcript_ids == 'all':
             return out
 
@@ -261,8 +267,17 @@ class Cluster():
             gene_ids=gene_ids,
             transcript_ids=transcript_ids
         )
-        return [r for r in out if 
-                any([r.overlaps(f) for f in filter_regions])]       
+        if len(filter_regions) == 0:
+            return []
+        
+        span = core.BioRegion(
+            start=min([r.start for r in filter_regions]),
+            end=max([r.end for r in filter_regions]),
+            reference=core.get_reference(
+                reference_type='genomic',
+                chromosome=filter_regions[0].reference.chromosome)
+        )
+        return [r for r in out if r.overlaps(span)]       
     
     def get_cis_regulatory_elements(self, gene_ids='all', transcript_ids='all'):
         """

@@ -12,6 +12,11 @@ class IndexingError(Exception):
     pass
 
 class ClusterIndexGenerator():
+    """
+    Class that generates a ClusterIndex object used to find clusters
+    with features of interest.
+    Used in setup_index.py.
+    """
 
     def __init__(self):
         print('Loading GTF ...')
@@ -122,12 +127,12 @@ class ClusterIndex():
         Returns the cluster_id of the cluster, in which the bio_region is located.
         Returns None if bio_region is not within any cluster.
         """
-        if bio_region.get_reference_type != 'genomic':
+        if bio_region.get_reference_type() != 'genomic':
             return ValueError('Can only select cluster from genomic regions.')
         chromosome = bio_region.reference.chromosome
-        for cluster, cluster_id in self._index['bio_region'][chromosome]:
-            bio_region.within(cluster)
-            return cluster_id
+        for cluster, cluster_id in self._index['bio_region']['chromosome'][chromosome]:
+            if bio_region.within(cluster):
+                return cluster_id
         return None
 
     def query_ensembl_id(self, ensembl_id: str):

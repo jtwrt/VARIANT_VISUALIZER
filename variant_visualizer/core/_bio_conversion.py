@@ -37,7 +37,7 @@ def convert_location(location: int, input_reference: _BioReference, output_refer
             base =  map_location_to_regions(location=location,
                                              regions=set(coding_regions))
             if _return_floats is True:
-                return base / 3
+                return (base+1)/3
             else:
                 return ceil(base / 3)
 
@@ -60,7 +60,7 @@ def convert_location(location: int, input_reference: _BioReference, output_refer
 
         elif isinstance(output_reference, ProteinReference):
             if _return_floats is True:
-                return location/3
+                return (location+1)/3
             else:
                 return ceil(location / 3)
 

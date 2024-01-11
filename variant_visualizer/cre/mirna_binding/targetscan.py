@@ -18,7 +18,7 @@ def get_targetscan_mirna_binding(bio_region: core.BioRegion, targetscan_db: pd.D
                             (targetscan_db[2] <= bio_region.end)&
                             (targetscan_db[0].isin([bio_region.reference.chromosome, 'chr'+bio_region.reference.chromosome])), :]
     out = []
-    for i, row in db_slice.iterrows():
+    for _, row in db_slice.iterrows():
         reference = core.get_reference(reference_type='genomic', 
                                    chromosome=io_utils.remove_chr(chromosome=row[0]),
                                    strand = row[5])
@@ -28,9 +28,17 @@ def get_targetscan_mirna_binding(bio_region: core.BioRegion, targetscan_db: pd.D
             start=row[1],
             end=row[2],
             reference=reference,
-            source=f'targetscan_target_locations_row:{i}',
+            source=f'targetscan_target_locations_row:{row.name}',
             binding=binding,
             score=score,
             label=f'{binding}, context++ percentile: {score}'
             ))
     return out
+
+
+def get_mirna_binding_source(mirna_binding:MiRNABinding, targetscan_db:pd.DataFrame):
+    """Returns the row of the dataframe for targetscan derived MiRNABinding."""
+    if mirna_binding.source.split(':')[0] != 'targetscan_target_locations_row':
+        raise ValueError('mirna_binding was not retrieved from targetscan.')
+    else:
+        return targetscan_db.loc[[int(mirna_binding.source.split(':')[1])]]

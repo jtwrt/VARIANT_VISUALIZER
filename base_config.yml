@@ -54,11 +54,11 @@ visualization:
       regulatory_sequence_height_ratio: 0.02
       regulatory_sequence_line_color: null
       row_height: 0.5
-      utr_height_ratio: 0.3
       start_codon_color: rgba(0,250,0,1.0)
       start_codon_height_ratio: 0.7
       stop_codon_color: rgba(250,0,0,1.0)
       stop_codon_height_ratio: 0.7
+      utr_height_ratio: 0.3
     add_gtf_collapsed_genes:
       CDS_height_ratio: 0.7
       color: rgba(0,0,0,1.0)
@@ -67,44 +67,51 @@ visualization:
       intron_height_ratio: 0.02
       other_feature_height_ratio: 0.02
       regulatory_sequence_height_ratio: 0.02
-      row_height: 0.25
+      row_height: 0.5
+      start_codon_color: rgba(102,166,30,1.0)
+      start_codon_height_ratio: 0.7
+      stop_codon_color: rgba(231,41,138,1.0)
+      stop_codon_height_ratio: 0.7
       three_prime_regulatory_sequence_height_ratio: 0.02
       three_prime_utr_height_ratio: 0.3
       utr_height_ratio: 0.3
-      start_codon_color: rgba(0,250,0,1.0)
-      start_codon_height_ratio: 0.7
-      stop_codon_color: rgba(250,0,0,1.0)
-      stop_codon_height_ratio: 0.7
     add_gtf_transcript_features:
       CDS_height_ratio: 0.7
       color: rgba(0,0,0,1.0)
       five_prime_regulatory_sequence_height_ratio: 0.02
       five_prime_utr_height_ratio: 0.3
       regulatory_sequence_height_ratio: 0.02
-      row_height: 0.25
+      row_height: 0.5
       start_codon_height_ratio: 0.7
       stop_codon_height_ratio: 0.3
       three_prime_regulatory_sequence_height_ratio: 0.02
       three_prime_utr_height_ratio: 0.3
       transcript_height_ratio: 0.02
       utr_height_ratio: 0.3
+      hide_protein_start_codon: True
     add_miRNA_binding:
-      color: rgba(177, 7, 0, 1.0)
+      color: rgba(251,128,114,1.0)
       height_ratio: 0.9
       row_height: 0.25
     add_mutations:
-      DEL_color: '#66a61e'
-      INS_color: '#e6ab02'
-      SNP_color: '#e7298a'
+      SNP_color: rgba(217,95,2,1.0)
+      INS_color: rgba(27,158,119,1.0)
+      DEL_color: rgba(117,112,179,1.0)
       height_ratio: 0.9
       row_height: 2.0
     add_pas:
       cleavage_site_height_ratio: 0.45
-      color: rgba(100,10,150,1.0)
+      color: rgba(190,186,218,1.0)
       connection_height_ratio: 0.03
       row_height: 0.25
       signal_height_ratio: 0.9
     add_rbp_binding:
-      color: rgba(0, 150, 50, 1.0)
+      color: rgba(128,177,211,1.0)
       height_ratio: 0.9
       row_height: 0.25
+    add_protein_annotations:
+      height_ratio: 0.9
+      row_height: 0.15
+      domain_fill_color: rgba(38, 166, 154, 0.7)
+      domain_line_color: rgba(0,0,0,1.0)
+      active site_fill_color: rgb(255, 143, 0, 0.7)

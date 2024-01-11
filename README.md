@@ -1,4 +1,13 @@
-# VARIANT_VISUALIZER
+# Variant-Visualizer
+
+This version of the Variant-Visualizer library was submitted as part of the Master Thesis of Julian Thorwarth on Jan. 12th, 2024.
+
+https://github.com/gruber-sciencelab/Variant-Visualizer
+https://github.com/jtwrt/VARIANT_VISUALIZER
+
+A second repository was submitted for the identification of frequently mutated cis-regulatory elements:
+
+https://github.com/gruber-sciencelab/Hotspot-Identification
 
 ![PTEN genomic region, cis-regulatory elements and somatic variants](example_figures/example_pten_gene.png)
 ![PTEN transcript with annotations from UniprotKB](example_figures/example_pten_transcript.png)
@@ -57,7 +66,7 @@ python setup_clusters.py --n_processes 1
 
 #### A selection of clusters
 
-If you wish to prepare the package for plotting a set of specific genes and you are using the default input files that were automatically prepared in the previous step, you can download a pre-generated index and query genes and transcript to find out which clusters you need to set up.
+If you wish to prepare the package for plotting a set of specific genes and you are using the default input files that were automatically prepared in the previous step, you can use a pre-generated index and query genes and transcript to find out which clusters you need to set up.
 
 ```python
 import variant_visualizer as vv
@@ -81,26 +90,8 @@ python setup_index.py
 ```
 
 ## Usage
+Read `vignette.ipynb` for exampels and detailed explaination on how this package can be used.
+For more advanced examples, take a look at `examples.ipynb`.
 
-Read `vignette.ipynb` for exampels and detailed explaination on how this package can be used. 
-
-## References
-
-> Add links to references
-
-### Packages and programms
-
-- Plotly
-- Bedtools
-- UCSC Liftover
-- SMEAGOL
-
-### Data and resources
-
-- Gtf 
-- TCGA MC3
-- TCGA code tables
-- TCGA cosmic signatures
-- PAS-Atlas
-- TargetscanDB
-- UniprotKB
+## Additional information
+`thesis_figures.ipynb` was used specifically for the generation of figures in the submitted thesis.

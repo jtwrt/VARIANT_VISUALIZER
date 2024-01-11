@@ -1,18 +1,11 @@
-
-
-from plotly.graph_objects import Figure as _GoFigure
-
-
 from .._config import config
 from .. import core, clusters, protein_annotation
 from .. import genome_annotation as ga
 
-import warnings as _warnings
+import warnings
 from collections import Counter as _Counter
-import plotly.graph_objects as _go
-import plotly.io as _pio
-import plotly.graph_objs as _pgo
-Shape = _go.layout.Shape
+import plotly.graph_objects as go
+Shape = go.layout.Shape
 from copy import deepcopy
 
 
@@ -26,7 +19,7 @@ class Figure(object):
             self, reference_type:str, cluster:clusters.Cluster, 
             transcript_ids:list='all', gene_ids:list='all',
             layout=None, style_dict=None,
-            reference=None):
+            _reference=None):
         """
         Description
         ---
@@ -40,7 +33,9 @@ class Figure(object):
         'genomic' reference. The method add_gtf_transcript_features() is invalid for non-genomic
         figures if multiple transcripts were selected.
         The method add_gtf_collapsed_transcript_features() is only ever valid in
-        genomic figures. 
+        genomic figures.
+        Multiple methods can be added to non-genomic visualizations if the BioReference
+        is adjusted for each transcript using the redefine_cluster_values() method.
 
         Implements methods for visualization of variants (add_variants()) 
         and different cis-regulatory elements. (add_pas(), add_miRNA_binding(), 
@@ -48,20 +43,29 @@ class Figure(object):
         
         Parameters
         ---
+        reference_type : str
+            'genomic', 'transcript' or 'protein': Defines the region
+            all plotted features are referenced to.
+        cluster : variant_visualizer.cluster.Cluster
+            Cluster biological features are retrieved from for plotting.
+        transcript_ids : list = 'all'
+            List of Ensembl transcript ids for transcripts that are to to be used by the Figure.
+            The list must include exactly one value if a
+            non-genomic reference-type is chosen for the Figure.
+            Default value uses all Cluster transcripts.
+        gene_ids : list = 'all'
+            List of Ensembl gene ids for genes that are to to be used by the Figure.
+            Default value uses all Cluster genes.
         layout : dict = None
             Used for initialization of the plotly.graph_objects.Figure if provided.
             Values in this dict overwrite the default values used in this class.
         style_dict : dict = None
             Overwrites config.visualization values for the instance.
             Only deined values given are overwritten.
-        reference : variant_visualizer.core._BioReference
-            Either GenomicReference, TranscriptReference or ProteinReference.
-            All BioRegions to be displayed in this plot must be mappable
-            to the chosen reference. References can best be retrieved by loading the
-            correct variant_visualizer.cluster.Cluster instance and using its 
-            .get_reference() method.
-            The correct cluster can be identified by loading the index 
-            (variant_visualizer.cluster.load_index()) and using its query methods.
+        _reference : variant_visualizer.core._BioReference = None
+            Overwrites automatic reference selection.
+            Valid values are GenomicReference, TranscriptReference or ProteinReference.
+            All BioRegions to be displayed in this plot must be mappable.
         """
 
         self.reference_type = reference_type
@@ -74,8 +78,8 @@ class Figure(object):
         layout.setdefault(
             'margin', 
             dict(
-                t=20,
-                b=80,
+                t=10,
+                b=70,
                 l=50,
                 r=50,
                 pad=0
@@ -93,13 +97,13 @@ class Figure(object):
             cluster=cluster,
             gene_ids=gene_ids,
             transcript_ids=transcript_ids,
-            _reference=reference
+            _reference=_reference
         )
 
         if isinstance(self.reference, core.GenomicReference):
-            xaxis_title = f'Nucelotide on chromosome {self.reference.chromosome}'
+            xaxis_title = f'Nucleotide on chromosome {self.reference.chromosome}'
         elif isinstance(self.reference, core.TranscriptReference):
-            xaxis_title = f'Nucelotide in transcribed region'
+            xaxis_title = f'Nucleotide in transcribed region'
         elif isinstance(self.reference, core.ProteinReference):
             xaxis_title = f'Amino acid in protein'
         else:
@@ -117,8 +121,8 @@ class Figure(object):
         self._x_max = None
         self._y_min = 0.0 # y-range range of the track that is currently being changed
         self._y_max = 0.0
-        self._left_buffer = 0.0 # determines how much whitespace is added to the x-axis, currently not in use
-        self._right_buffer = 0.0
+        self._left_buffer = 0.01 # determines how much whitespace is added to the x-axis, non-zero makes sure that lines at the edge are shown properly
+        self._right_buffer = 0.01
         
 
     @property
@@ -142,27 +146,31 @@ class Figure(object):
 
     @figure.setter
     def figure(self, layout):
-        self._figure = _go.Figure(data=None, layout=layout, frames=None, skip_invalid=False)
+        self._figure = go.Figure(data=None, layout=layout, frames=None, skip_invalid=False)
 
-    def redefine_cluster_values(self, cluster:clusters.Cluster, gene_ids:set='all', transcript_ids:set='all', _reference:core._BioReference=None):
+    def redefine_cluster_values(self, cluster:clusters.Cluster=None, gene_ids:set='all', transcript_ids:set='all', _reference:core._BioReference=None):
         """
         Method to be used to plot non-convertible BioRegions to the same plot.
         The reference_type of the figure is not changed.
         
         Redefines internal Figure attributes the same way they are defined during initialization.
-
+        If cluster is None, the current cluster value is kept.
+        
         Attributes that can be changed by invoking this method are:
             _cluster, cluster_id, _gtf_regions, 
             gene_ids, transcript_ids, default_strand_value, 
             reference
         """
-
-        self._cluster = deepcopy(cluster)
-        self.cluster_id = self._cluster.cluster_id
+        if cluster is not None:
+            self._cluster = deepcopy(cluster)
+            self.cluster_id = self._cluster.cluster_id
         self._gtf_regions = self._cluster._get_filter_regions(
             gene_ids=gene_ids,
             transcript_ids=transcript_ids
-        )        
+        )
+        if len(self._gtf_regions) == 0:
+            raise ValueError('Could not find Gtf-regions in this cluster matching the selected gene_ids and transcript_ids')
+
         self.gene_ids = set([r.gene_id for r in self._gtf_regions])
         self.transcript_ids = set([r.transcript_id for r in self._gtf_regions])
         if '' in self.transcript_ids: # transcript_id is '' for gene features
@@ -171,7 +179,7 @@ class Figure(object):
 
         # Set figure reference value:
         if _reference is not None:
-            _warnings.warn('Figure was initialized with \'_reference\' attribute. The given value will be used instead of retrieving a reference from the given cluster.')
+            warnings.warn('Figure was initialized with \'_reference\' attribute. The given value will be used instead of retrieving a reference from the given cluster.')
             self.reference = _reference
         elif len(self.transcript_ids) + len(self.gene_ids) > 2:
             if self.reference_type == 'genomic':
@@ -240,6 +248,7 @@ class Figure(object):
         Internal function that gathers all updates to the plotly figure. 
         Speeds up the process of creating a figure by updating once per figure,
         instead of once per added track.
+        Updates are applied by manually calling the update_figure().
         """
         self._next_update['shapes'].extend(shapes)
         # Add traces if no identical trace is plotted already, prevent duplicate legend entries
@@ -279,7 +288,7 @@ class Figure(object):
             raise MissingStyleAttributeException(f'{attribute} not in function style_dict or config style_dict.')
                
     def _init_row(self, row: str, row_height: float) -> float:
-                
+        """Initialize a new track of the visualization."""
         if row == 'next':
             self._y_min = self._y_max
             self._y_max += row_height
@@ -314,9 +323,9 @@ class Figure(object):
         self._y_max += whitespace
 
     def add_regions(
-            self, regions: list, height_ratio: 0.9, fill_color='rgba(0,0,0,1.0)', 
-            line_color=None, legend_entry:str=False, line_width=0.5, opacity=1.0, 
-            show_labels=False, edge_extension=0.5, row='next', 
+            self, regions: list, height_ratio=0.9, fill_color='rgba(0,0,0,0.5)', 
+            line_color=None, legend_entry:str=False, line_width=0.5, opacity=1.0,
+            regions_name='BioRegion', show_labels=False, edge_extension=0.5, row='next', 
             row_height=1.0, _float_locations=False) -> bool:
         """
         Description
@@ -325,6 +334,7 @@ class Figure(object):
         if regions where added to the Figure instance.
         This method is internally called by the more specialized methods.
         Mapping to different BioReferences is handled in this function.
+        Returns a bool stating if any BioRegion was successfully added.
 
         Parameters
         ---
@@ -336,8 +346,8 @@ class Figure(object):
         fill_color : str
             Fill color of the region shapes.
             Refer to plotly for valid input colors
-        line_color : str = None
-            If given, color of the region shape outline. Otherwise uses fill_color
+        line_color : str or None
+            If given, color of the region shape outline. If None uses fill_color.
         legend_entry : str = False
             Constructs a legend entry from the given string if given.
         line_width : float
@@ -355,6 +365,12 @@ class Figure(object):
             \'next\' or \'current\': in which track regions should be plotted
         row_hieght : float
             track height
+        _float_locations : bool
+            Option used to plot nucleotide regions to amino acid regions.
+            If true, example: Instead of mapping nucleotide location 1,2,3 to amino acid 1,
+            they will be mapped to 0.7, 1.0, 1.3 (rounded).
+            Suppressed double mapping of different nucleotide locations to the same 
+            amino acid location.
         """
         
         if len(regions) == 0:
@@ -366,7 +382,7 @@ class Figure(object):
             if not isinstance(r.reference, type(self.reference)):
                 r.reference.update(self.reference) # add transcript_region, coding_regions info to reference
                 if not r.reference.convertible(self.reference):
-                    _warnings.warn(f'Cannot plot non-convertible region {r}.')
+                    warnings.warn(f'Cannot plot non-convertible region {r}.')
                 else:
                     try:
                         converted_regions.append(
@@ -397,7 +413,7 @@ class Figure(object):
         # add trace for legend entry
         if isinstance(legend_entry, str):
            traces.append(
-               _go.Scatter(
+               go.Scatter(
                    mode='markers',
                     x=[None],
                     y=[None],
@@ -432,14 +448,9 @@ class Figure(object):
                           
         # Add hover labels
         if show_labels is not False:
-            hover_labels = []
-            for i, r in enumerate(regions):
-                if isinstance(show_labels, list) and len(show_labels) == len(regions):
-                    pass
-                elif isinstance(show_labels, str):
-                    show_labels = [show_labels for _ in regions]
-                else:
-                    raise TypeError('show_labels has unsupported type.')
+
+            region_positions = []
+            for r in regions:
                 if isinstance(r.start, int):
                     start = str(r.start)
                     end = str(r.end)
@@ -448,28 +459,68 @@ class Figure(object):
                     end = f'{r.end:.1f}'
                 else:
                     raise TypeError('Region start has invalid type.')
-                if r.label is not None:
-                    hover_labels.append(f'<b>{show_labels[i]} in {start}-{end}</b><br>{r.label}')
+                region_positions.append(f'<b>{regions_name} in {start}-{end}</b>')
+
+            region_labels = []
+            if isinstance(show_labels, list) and len(show_labels) == len(regions):
+                region_labels = [show_labels[i] for i,_ in enumerate(regions)]
+            elif isinstance(show_labels, str):
+                region_labels = [show_labels for _ in regions]    
+            elif show_labels is True:
+                for r in regions:
+                    try:
+                        region_labels.append(r.label)
+                    except AttributeError:
+                        region_labels.append(None)
+            else:
+                raise TypeError('show_labels has unsupported type.')
+            
+            hover_labels = []
+            for position, label in zip(region_positions, region_labels):
+                if label is None:
+                    hover_labels.append(str(position))
                 else:
-                    hover_labels.append(f'<b>{show_labels[i]} in {start}-{end}</b>') 
-            traces.append(_go.Scatter(mode='markers',
-                                        x=[r.start + 0.5 * (r.end - r.start) for r in regions],
-                                        y=[y_center for _ in regions],
-                                        name='',
-                                        text=hover_labels,
-                                        marker=dict(symbol='square',
-                                                    opacity=0.0,
-                                                    color=fill_color,
-                                                    ),
-                                        hovertemplate='%{text}'
-                                        )
-                            )
+                    hover_labels.append(f'{position}<br>{label}')
+                                    
+            traces.append(go.Scatter(
+                mode='markers',
+                x=[r.start + 0.5 * (r.end - r.start) for r in regions],
+                y=[y_center for _ in regions],
+                name='',
+                text=hover_labels,
+                marker=dict(symbol='square',
+                            opacity=0.0,
+                            color=fill_color,
+                            ),
+                hovertemplate='%{text}'
+                )
+            )
            
         self._add_to_next_update(shapes=shapes,
                                  traces=traces)
         return True
 
     def add_legend_entry(self, text: str, fill_color: str, symbol='square', line_width=0.5, opacity=1.0, line_color=None):
+        """
+        Description
+        ---
+        Add a custom legend entry to the Figure.
+        
+        Parameters
+        ---
+        text : str
+            Text displayed in the legend.
+        fill_color : str
+            Plotly compatible color value used for the legend symbol fill. Example: rgba(0,0,0,1.0)
+        symbol : str
+            Plotly marker symbol.
+        line_color : str
+            Plotly compatible color value used for the legend symbol line. Example: rgba(0,0,0,1.0)
+        line_width : float
+            Width of the legend symbol line.
+        opacity : float
+            Value between 0 and 1, determines the opacity of the lgened symbol.
+        """
         
         # increase right margin
         current_margin = self._next_update['layout']['margin']['r']
@@ -478,7 +529,7 @@ class Figure(object):
         traces = []
         if line_color is None:
             line_color = fill_color
-        traces.append(_go.Scatter(mode='markers',
+        traces.append(go.Scatter(mode='markers',
                                     x=[None],
                                     y=[None],
                                     name=text,
@@ -493,7 +544,27 @@ class Figure(object):
         self._add_to_next_update(traces=traces)
 
     def add_annotation(self, text: str, side: str, margin=150, y='middle', y_anchor='middle') -> None:
-        """Add a label to the plot, which will be aligned with the plot itself, not its coordinates."""
+        """
+        Description
+        ---
+        Add a label to the plot at the current track.
+        
+        Parameters
+        ---
+        text : str
+            Annotation text.
+        side : str
+            Side of the visualization where the annotation is added.
+            Valid values are 'right' and 'left'.
+        margin : int
+            Minimal margin width on the side of the annotation. 
+        y : str
+            Location of the annotation relative to the current track.
+            Valid values are 'middle', 'bottom', 'top'.
+        y_anchor : str
+            Anchor of the text lable.
+            Valid values are 'middle', 'bottom', 'top'.
+        """
         if side == 'left':
             x_anchor = 'right'
             x = 0
@@ -518,7 +589,7 @@ class Figure(object):
         else:
             raise ValueError('Invalid y location: choose middle/bottom/top')
             
-        annotation = _go.layout.Annotation(
+        annotation = go.layout.Annotation(
             text=text,
             #font={'size': 5},
             xref='paper',
@@ -532,20 +603,22 @@ class Figure(object):
         )
         self._add_to_next_update(annotation=annotation)
 
-    def add_gtf_transcript_features(self, style_dict=None, regulatory_sequence=False) -> None:
+    def add_gtf_transcript_features(self, style_dict=None, regulatory_sequence=False, annotations:list='default', annotation_margin=150) -> None:
         """
         Description
         ---
         Plots the transcripts that were selected when the figure was initialized.
-        This function should not be used to plot multiple transcripts outside of a
-        genomic figure!
-        
+        By defaults hides start codons in Figures with reference-type 'protein'.
+
         Parameters
         ---
         style_dict : dict
             function style dict, to overwrite options from config.yml
         regulatory_sequence : bool
             Show regulatory sequence as defined in the variant_visualizer config.yml.
+        annotations : list = 'default'
+            List of the same length as plotted transcripts, adds annotaiton to each transcript.
+            Default value adds Ensembl id, transcript strand and transcript biotype as annotation.
         """
     
 
@@ -562,7 +635,7 @@ class Figure(object):
         transcripts = dict()
         for t in transcript_ids:
             if len(transcript_ids) > 1 and self.reference_type != 'genomic':
-                #_warnings.warn(
+                #warnings.warn(
                 #    'This function should not be used to plot multiple transcripts outside of a genomic figure!'
                 #    )
                 pass
@@ -589,9 +662,15 @@ class Figure(object):
                                key=lambda f: f['transcript'][0].get_length())
         plus_t = sorted([transcripts[t] for t in transcript_ids if transcripts[t]['transcript'][0].reference.strand == '+'], 
                                key=lambda f: f['transcript'][0].get_length())
+        minus_t_ids = [f['transcript'][0].transcript_id for f in minus_t]
+        plut_t_ids = [f['transcript'][0].transcript_id for f in plus_t]
 
         line_width = 1.0
 
+        if isinstance(annotations, list) and len(annotations) != len(minus_t_ids+plut_t_ids):
+            raise ValueError(f'Manual annotations must be the same length as transcripts that will be added. These transcript will be added in this order (tracks from bottom to top): {minus_t_ids+plut_t_ids}')
+        
+        nth_track = 0
         for features in minus_t+plus_t:
             plotted = []
             plotted.append(self.add_regions(regions=features['transcript'],
@@ -600,7 +679,6 @@ class Figure(object):
                                 row='next',
                                 row_height=row_height,
                                 legend_entry=False,
-                                show_labels=False,
                                 line_color=color,
                                 line_width=line_width
                                 ))
@@ -612,13 +690,21 @@ class Figure(object):
                                     row='current',
                                     row_height=row_height,
                                     legend_entry=False,
-                                    show_labels=f_type,
+                                    show_labels=True,
+                                    regions_name=f_type,
                                     line_color=color,
                                 line_width=line_width
                                     ))
             for f_type in ['CDS',
                            'three_prime_utr','five_prime_utr',
                            'start_codon','stop_codon',]:
+                hide_protein_start_codon = self._retrieve_style(
+                    attribute='hide_protein_start_codon',
+                    function='add_gtf_transcript_features',
+                    style_dict=style_dict
+                )
+                if hide_protein_start_codon is True and self.reference_type == 'protein' and f_type == 'start_codon':
+                    continue
                 # use non-black, semitransparent fill color for ProteinReference figures to see exon boundaries
                 if isinstance(self.reference, core.ProteinReference):
                     fill_color = 'rgba(100,100,100,0.5)'
@@ -633,19 +719,25 @@ class Figure(object):
                                 row='current',
                                 row_height=row_height,
                                 legend_entry=False,
-                                show_labels=f_type,
+                                show_labels=True,
+                                regions_name=f_type,
                                 _float_locations=True,
                                 edge_extension=edge_extension,
                                 line_width=line_width
                                 ))
             if len(plotted) > 0 and any(plotted):
-                annotation = f'{features["transcript"][0].transcript_id},<br>({features["transcript"][0].reference.strand}), {features["transcript"][0].transcript_biotype}'
+                if isinstance(annotations, list):
+                    annotation = annotations[nth_track]
+                else:
+                    annotation = f'{features["transcript"][0].transcript_id}, ({features["transcript"][0].reference.strand}),<br>{features["transcript"][0].transcript_biotype}'
                 self.add_annotation(text=annotation,
-                                    side='left')
+                                    side='left',
+                                    margin=annotation_margin)
+            nth_track += 1
 
     def add_gtf_collapsed_transcript_features(self, style_dict=None, regulatory_sequence=False, strand='both',
                                 uniprotkb_annotations:protein_annotation.UniprotAnnotations=None, legend_entry=True,
-                                annotation='<br>collapsed', annotation_margin=150) -> None:
+                                annotations:list='default', annotation_margin=150) -> None:
         """
         Description
         ---
@@ -658,27 +750,26 @@ class Figure(object):
 
         Parameters
         ---
-        cluster : cluster.Cluster
-            variant_visualier.cluster.Cluster from where genomic regions are extraced
         style_dict : dict
             function style dict, to overwrite options from config.yml
         regulatory_sequence : bool
             Show regulatory sequence as defined in the variant_visualizer config.yml.
         strand : str
-            \'both\',\'+\',\'-\' - select genes from which strand should be plotted
+            'both','+','-' - select genes from which strand should be plotted
         uniprotkb_annotations : variant_visualizer.protein_annotation.UniprotAnnotations
             Used to exchange ensembl id annotations within the plot for gene names if provided
         legend_entry : bool
             if True, enters start and stop codon into the legend
-        annotation : str
-            String that is added to the standard \'gene_id, (strand)\' annotation
+        annotations : list = 'default'
+            List of the same length as plotted transcripts, adds annotaiton to each transcript.
+            Default value adds Ensembl id, transcript strand and transcript biotype as annotation.
         annotation_margin : int
             Minimum width to which the left margin is increased, if annotations are added in this plot
         """
 
         if self.reference_type != 'genomic':
             raise NotImplementedError('This function can not be used outside of a genomic figure!')
-            _warnings.warn(
+            warnings.warn(
                 'This function should not be used outside of a genomic figure!'
                 )
 
@@ -693,6 +784,10 @@ class Figure(object):
               
         row_height = self._retrieve_style('row_height', 'add_gtf_collapsed_genes', style_dict)    
         
+        if isinstance(annotations, list) and len(annotations) != len(gene_ids):
+            raise ValueError(f'Manual annotations must be the same length as genes, whichs transcript will be collapsed. These genes will be added in this order (tracks from bottom to top): {gene_ids}')
+
+        nth_track = 0
         for g in gene_ids:
             features = collapsed_genes[g]
             row='next'
@@ -707,7 +802,8 @@ class Figure(object):
                                         row=row,
                                         row_height=row_height,
                                         legend_entry=False,
-                                        show_labels=f_type,
+                                        show_labels=True,
+                                        regions_name=f_type,
                                         line_color=color
                                         )
                         row = 'current'
@@ -722,7 +818,8 @@ class Figure(object):
                                     row=row,
                                     row_height=row_height,
                                     legend_entry=False,
-                                    show_labels=f_type,
+                                    show_labels=True,
+                                    regions_name=f_type,
                                     line_color=color
                                     )
                     row = 'current'
@@ -736,7 +833,8 @@ class Figure(object):
                                     row=row,
                                     row_height=row_height,
                                     legend_entry=False,
-                                    show_labels=f_type,
+                                    show_labels=True,
+                                    regions_name=f_type,
                                     line_color=color,
                                     line_width=1.0
                                     )
@@ -763,18 +861,22 @@ class Figure(object):
                         strand = r.reference.strand
                         break2 = True
                         break
-                if uniprotkb_annotations is not None:
-                    gene_name = uniprotkb_annotations.get_gene_name(ensembl_gene_id=g,
-                                                                    cluster=self._cluster)
-                    text = f'{gene_name}, ({strand}){annotation}'
+                if isinstance(annotations, list):
+                    annotation = annotations[nth_track]
                 else:
-                    text = f'{g}, ({strand}){annotation}'
-                self.add_annotation(text=text,
+                    if uniprotkb_annotations is not None:
+                        gene_name = uniprotkb_annotations.get_gene_name(ensembl_gene_id=g,
+                                                                        cluster=self._cluster)
+                        annotation = f'{gene_name}, ({strand})'
+                    else:
+                        annotation = f'{g}, ({strand})'
+                self.add_annotation(text=annotation,
                                     side='left',
                                     margin=annotation_margin)
+            nth_track += 1
 
             
-    def add_variants(self, variant_types='all', style_dict=None, legend_entry=True, annotation='', row='next', base='default', _variants=None):
+    def add_variants(self, variant_types='all', style_dict=None, legend_entry=True, annotation='', row='next', base='default', sample_class='any', _variants=None):
         """
         Description
         ---
@@ -788,6 +890,9 @@ class Figure(object):
         ---
         variant_types : set = 'all'
             Only plots variants where variant_type is a value of the given set. Default plots all.
+        sample_class : str
+            Select set of samples from which variants will be shown. 
+            Valid values are 'any', 'mss', 'msi', 'pole', 'msi_pole'
         style_dict : dict = None
             function style dict, to overwrite options from config.yml or the Figure style_dict
         legend_entry : bool = False
@@ -806,7 +911,7 @@ class Figure(object):
         height_ratio = self._retrieve_style('height_ratio', 'add_mutations', style_dict)
         row_height = self._retrieve_style('row_height', 'add_mutations', style_dict)
         whitespace = row_height*(1-height_ratio)
-        row_height = row_height*height_ratio
+        row_height = (row_height-whitespace)*height_ratio
         self.add_whitespace(whitespace/2)
         row_height = self._init_row(row=row, row_height=row_height)
         
@@ -823,7 +928,8 @@ class Figure(object):
         else:
             variants = self._cluster.get_variants(
                 gene_ids=self.gene_ids,
-                transcript_ids=self.transcript_ids
+                transcript_ids=self.transcript_ids,
+                sample_class=sample_class
             )
         if variant_types != 'all':
             variants = [v for v in variants if v.variant_type in variant_types]
@@ -874,8 +980,8 @@ class Figure(object):
                 raise ValueError('Invalid Figure reference type.')
         if not isinstance(base.reference, type(self.reference)):
             base = base.convert(self.reference)
-        shapes.append(
-            Shape(type='rect',
+        shapes.append(Shape(
+            type='rect',
             x0=base.start,
             x1=base.end,
             y0=self._y_min,
@@ -887,9 +993,9 @@ class Figure(object):
         )
 
         if len(unmapped_locations) > 0:
-            _warnings.warn(f'{len(unmapped_locations)} variant locations could not be converted to the Figure.reference. This is normal behavior when mapping variants located in regulatory sequences to a non-genomic figure.')        
+            warnings.warn(f'{len(unmapped_locations)} variant locations could not be converted to the Figure.reference. This is normal behavior when mapping variants located in regulatory sequences to a non-genomic figure.')        
         if len(mapped_location_ints) == 0:
-            _warnings.warn('No variants were given or could be mapped.')
+            warnings.warn('No variants were given or could be mapped.')
             self.add_whitespace(whitespace/2)
             self._add_to_next_update(
                 shapes=shapes)
@@ -907,13 +1013,13 @@ class Figure(object):
             try:
                 color = self._retrieve_style(
                     f'{variant_type}_color', 'add_mutations', style_dict)
-            except KeyError:
+            except MissingStyleAttributeException:
                 color = 'rgba(0,0,0,1.0)'
-                _warnings.warn(f'Attribute \'{variant_type}_color\' is not part of the style_dict provided. Continuing with default value "{color}".')
+                warnings.warn(f'Attribute \'{variant_type}_color\' is not part of the style_dict provided. Continuing with default value "{color}".')
 
             # Add dummy trace to create legend entry
             if legend_entry is True:
-                traces.append(_go.Scatter(x=[None],
+                traces.append(go.Scatter(x=[None],
                                           y=[None],
                                           mode="lines",
                                           name=variant_type,
@@ -936,7 +1042,7 @@ class Figure(object):
                     n_at_location = 0
 
                 bottom = self._y_min + (n_at_location/max_n) * (self._y_max-self._y_min) * height_ratio
-                shapes.append(_go.layout.Shape(type='rect',
+                shapes.append(go.layout.Shape(type='rect',
                                                x0=location.start - 0.48,
                                                x1=location.start + 0.48,
                                                y0=bottom,
@@ -956,10 +1062,25 @@ class Figure(object):
                 start = key.split('§')[0]
                 label = key.split('§')[1]
                 if not labels.get(start):
-                    labels[start] = f'<b>{variant_type} at {start}</b><br>'
-                labels[start] += f'{counter[key]} x {label}<br>'
+                    labels[start] = (f'<b>{variant_type} at {start}</b><br>', [])
+                labels[start][1] .append(f'{counter[key]} x {label}')
+            # sort label entries 
+            for key in labels:
+                header, v_list = labels[key]
+                v_list = sorted(
+                    v_list,
+                    key=lambda x: x.split(' x ')[1]
+                )
+                v_list = sorted(
+                    v_list,
+                    key=lambda x: int(x.split(' x ')[0]),
+                    reverse=True
+                )
+                this_label = header
+                this_label += '<br>'.join(v_list)
+                labels[key] = this_label 
             locations = labels.keys()
-            traces.append(_go.Scatter(mode='markers',
+            traces.append(go.Scatter(mode='markers',
                                     x=[str(l) for l in locations],
                                     y=[label_y_pos[int(l)] for l in locations],
                                     name='',
@@ -980,26 +1101,29 @@ class Figure(object):
             annotation_xanchor = 'right'
             annotation_x = max_n_loc - 0.48
 
-        annotation = _go.layout.Annotation(text=annotation_text,
-                            #font={'size': 5},
-                            #xref='paper',
-                            xanchor=annotation_xanchor,
-                            x=annotation_x,
-                            yref='y',
-                            yanchor='top',
-                            y=self._y_min + (self._y_max-self._y_min) * height_ratio,
-                            showarrow=False,
-                            bgcolor='rgba(255,255,255,0.5)'
-                            )
+        annotation = go.layout.Annotation(
+            text=annotation_text,
+            #font={'size': 5},
+            #xref='paper',
+            xanchor=annotation_xanchor,
+            x=annotation_x,
+            yref='y',
+            yanchor='top',
+            y=self._y_min + (self._y_max-self._y_min) * height_ratio,
+            showarrow=False,
+            bgcolor='rgba(255,255,255,0.5)'
+        )
         self.add_whitespace(whitespace/2)
-        self._add_to_next_update(shapes=shapes,
-                                traces=traces,
-                                annotation=annotation)
+        self._add_to_next_update(
+            shapes=shapes,
+            traces=traces,
+            annotation=annotation
+        )
         return True
 
 
 
-    def add_pas(self, strand='default', style_dict=None, legend_entry=False, annotation='PAS', row='next', _pas=None) -> None:
+    def add_pas(self, strand='default', style_dict=None, legend_entry=False, annotation='default', row='next', _pas=None) -> None:
         """
         Description
         ---
@@ -1030,20 +1154,19 @@ class Figure(object):
                 gene_ids=self.gene_ids,
                 transcript_ids=self.transcript_ids
             )
-        else: 
-            _warnings.warn(
-                'Using the given PAS, not retrieving from cluster.'
-            )
+            if strand == 'default':
+                strand = self._default_strand_value
+            pas = self._select_strand_regions(
+                strand=strand, 
+                regions=pas
+                )
+        else:
             pas = _pas
+            strand = 'both'
 
-        if strand == 'default':
-            strand = self._default_strand_value
-        pas = self._select_strand_regions(
-            strand=strand, 
-            regions=pas
-            )
+        
         if len(pas) == 0:
-            _warnings.warn('No PAS to be plotted.')
+            warnings.warn('No PAS to be plotted.')
             return False
 
         cleavage_sites = set()
@@ -1057,20 +1180,24 @@ class Figure(object):
                                               p.reference))
         connections = core.combine_regions(connections)
 
+        if legend_entry is True:
+            legend_entry = 'PAS'
         row_height = self._retrieve_style('row_height', 'add_pas', style_dict)
         color = self._retrieve_style('color', 'add_pas', style_dict)
         self.add_regions(regions=pas,
                          fill_color=color,
                          row_height=row_height,
                          height_ratio=self._retrieve_style('signal_height_ratio', 'add_pas', style_dict),
-                         show_labels='Polyadenylation signal',
+                         show_labels=True,
+                         regions_name='Polyadenylation signal',
                          row=row,
                          legend_entry=legend_entry)
         self.add_regions(regions=list(cleavage_sites),
                          fill_color=color,
                          row_height=row_height,
                          height_ratio=self._retrieve_style('cleavage_site_height_ratio', 'add_pas', style_dict),
-                         show_labels='Cleavage site',
+                         show_labels=True,
+                         regions_name='Cleavage site',
                          row='current')
         self.add_regions(regions=connections,
                          fill_color=color,
@@ -1078,13 +1205,16 @@ class Figure(object):
                          height_ratio=self._retrieve_style('connection_height_ratio', 'add_pas', style_dict),
                          row='current')
     
-        text = annotation
-        if strand != 'both':
-            text += f', ({strand})'
+        if annotation == 'default':
+            text = 'PAS'
+            if strand != 'both':
+                text += f', ({strand})'
+        else:
+            text = annotation
         self.add_annotation(text=text,
                             side='left')
 
-    def add_miRNA_binding(self, strand='default', style_dict=None, legend_entry=False, annotation='miRNA-binding', row='next', _miRNA_binding_regions=None):
+    def add_miRNA_binding(self, strand='default', style_dict=None, legend_entry=False, annotation='default', row='next', _miRNA_binding_regions=None):
         """
         Description
         ---
@@ -1115,37 +1245,41 @@ class Figure(object):
                 gene_ids=self.gene_ids,
                 transcript_ids=self.transcript_ids
             )
-        else: 
-            _warnings.warn(
-                'Using the given miRNA_binding_regions, not retrieving from cluster.'
+            if strand == 'default':
+                strand = self._default_strand_value
+            miRNA_binding_regions = self._select_strand_regions(
+                strand=strand,
+                regions=miRNA_binding_regions
             )
+        else:
             miRNA_binding_regions = _miRNA_binding_regions
-
-        if strand == 'default':
-            strand = self._default_strand_value
-        miRNA_binding_regions = self._select_strand_regions(
-            strand=strand,
-            regions=miRNA_binding_regions
-        )
+            strand = 'both'
+        
         if len(miRNA_binding_regions) == 0:
-            _warnings.warn('No miRNA-binding regions to be plotted.')
+            warnings.warn('No miRNA-binding regions to be plotted.')
             return False
 
+        if legend_entry is True:
+            legend_entry = 'miRNA-binding'
         self.add_regions(regions=miRNA_binding_regions,
                          fill_color=self._retrieve_style('color', 'add_miRNA_binding', style_dict),
                          row_height=self._retrieve_style('row_height', 'add_miRNA_binding', style_dict),
                          height_ratio=self._retrieve_style('height_ratio', 'add_miRNA_binding', style_dict),
-                         show_labels='miRNA-binding',
+                         show_labels=True,
+                         regions_name='miRNA-binding',
                          row=row,
                          legend_entry=legend_entry)
         
-        text=annotation
-        if strand != 'both':
-            text += f', ({strand})'
+        if annotation == 'default':
+            text = 'miRNA binding'
+            if strand != 'both':
+                text += f', ({strand})'
+        else:
+            text = annotation
         self.add_annotation(text=text,
                             side='left')
 
-    def add_rbp_binding(self, strand='default', style_dict=None, legend_entry=False, annotation='RBP-binding', row='next', _rbp_binding_regions=None):
+    def add_rbp_binding(self, strand='default', style_dict=None, legend_entry=False, annotation='default', row='next', _rbp_binding_regions=None):
         """
         Description
         ---
@@ -1173,41 +1307,46 @@ class Figure(object):
 
 
         if _rbp_binding_regions is None:
-            rbp_binding_regions = self._cluster.get_miRNA_binding(
+            rbp_binding_regions = self._cluster.get_rbp_binding(
                 gene_ids=self.gene_ids,
                 transcript_ids=self.transcript_ids
             )
-        else: 
-            _warnings.warn(
-                'Using the given rbp_binding_regions, not retrieving from cluster.'
+            if strand == 'default':
+                strand = self._default_strand_value
+            rbp_binding_regions = self._select_strand_regions(
+                strand=strand,
+                regions=rbp_binding_regions
             )
+        else:
             rbp_binding_regions = _rbp_binding_regions
+            strand = 'both'
 
-        if strand == 'default':
-            strand = self._default_strand_value
-        rbp_binding_regions = self._select_strand_regions(
-            strand=strand,
-            regions=rbp_binding_regions
-        )
+        
         if len(rbp_binding_regions) == 0:
-            _warnings.warn('No RBP-binding regions to be plotted.')
+            warnings.warn('No RBP-binding regions to be plotted.')
             return False
 
+        if legend_entry is True:
+            legend_entry = 'RBP-binding'
         self.add_regions(regions=rbp_binding_regions,
                          fill_color=self._retrieve_style('color', 'add_rbp_binding', style_dict),
                          row_height=self._retrieve_style('row_height', 'add_rbp_binding', style_dict),
                          height_ratio=self._retrieve_style('height_ratio', 'add_rbp_binding', style_dict),
-                         show_labels='RBP-binding',
+                         show_labels=True,
+                         regions_name='RBP-binding',
                          row=row,
                          legend_entry=legend_entry)
         
-        text=annotation
-        if strand != 'both':
-            text += f', ({strand})'
+        if annotation == 'default':
+            text = 'RBP binding'
+            if strand != 'both':
+                text += f', ({strand})'
+        else:
+            text = annotation
         self.add_annotation(text=text,
                             side='left')
     
-    def add_protein_annotations(self, protein_annotations: list, style_dict:dict=None, legend_entry=False, annotation=True, row='next'):
+    def add_protein_annotations(self, protein_annotations: list, style_dict:dict=None, legend_entry=True, annotation=True, row='next'):
         """
         Description
         ---
@@ -1230,19 +1369,21 @@ class Figure(object):
             \'current\' or \'next\' track.
         """
 
-        function_name = 'add_uniprotkb_annotation'
+        function_name = 'add_protein_annotations'
 
         # sort by type
         a_dict = {a.annotation_type: [] for a in protein_annotations}
         [a_dict[a.annotation_type].append(a) for a in protein_annotations]
 
         row = row
+        plotted = False
         for a_type in a_dict.keys():
             try:
                 fill_color = self._retrieve_style(
                     f'{a_type}_fill_color', function_name, style_dict
                 )
             except MissingStyleAttributeException:
+                warnings.warn(f'Provide value for \'{a_type}_fill_color\' in function style_dict or add it in the config.yml. Using a default value for now.')
                 fill_color = 'rgba(200,200,200,1.0)' # grey
 
             try:
@@ -1258,7 +1399,7 @@ class Figure(object):
                 this_legend_entry = False
 
             self.add_regions(
-                regions=protein_annotations,
+                regions=a_dict[a_type],
                 height_ratio=self._retrieve_style(
                     'height_ratio', function_name, style_dict
                 ),
@@ -1266,18 +1407,21 @@ class Figure(object):
                 line_color=line_color,
                 legend_entry=this_legend_entry,
                 line_width=0.5,
-                show_labels=a_type,
+                show_labels=True,
+                regions_name=a_type,
                 row=row,
                 row_height=self._retrieve_style(
                     'row_height', function_name, style_dict
                 )
             )
             row = 'current'
-        if annotation is not False:
+            plotted = True
+
+        if annotation is not False and plotted is True:
             if isinstance(annotation, str):
                 text = annotation
             else:
-                text = 'UniprotKB annotation'
+                text = 'UniProt annotation'
             self.add_annotation(
                 text=text,
                 side='left'
@@ -1306,7 +1450,7 @@ class Figure(object):
 
     def _add_gtf_cluster(self, cluster: clusters.Cluster, strands=['-', '+'], style_dict=None):
 
-        _warnings.warn('_add_gtf_cluster function is work in progress!')
+        warnings.warn('_add_gtf_cluster function is work in progress!')
 
         gtf_cluster = cluster.gtf_cluster
         plot_regions = gtf_cluster.cluster_segments
@@ -1337,7 +1481,8 @@ class Figure(object):
                                     fill_color=fill_color,
                                     line_width=line_width,
                                     line_color=line_color,
-                                    show_labels=feature_type,
+                                    show_labels=True,
+                                    regions_name=feature_type,
                                     row=row
                                     )
                 if plotted is True:

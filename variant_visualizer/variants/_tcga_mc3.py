@@ -100,7 +100,7 @@ def load_mc3_slice(cluster: int):
                             dtype={'Chromosome': 'str'})
     return mc3_slice  
 
-def get_row_variant(i: int, row: pd.Series):
+def get_row_variant(row: pd.Series):
     reference = core.get_reference(
     reference_type='genomic',
     chromosome=str(row['Chromosome']),
@@ -133,7 +133,7 @@ def get_row_variant(i: int, row: pd.Series):
         sample_id=row['Tumor_Sample_Barcode'],
         normal_sample_id=row['Matched_Norm_Sample_Barcode'],
         disease=disease,
-        source=f'mc3_row:{i}',
+        source=f'mc3_row:{row.name}',
         ref_allele=row['Reference_Allele'],
         alt_allele_1=row['Tumor_Seq_Allele1'],
         alt_allele_2=row['Tumor_Seq_Allele2'],
@@ -145,8 +145,8 @@ def get_mc3_variants(mc3_slice: pd.DataFrame) -> list:
     """Returns all variants in section of mc3"""
 
     out = []
-    for i,row in mc3_slice.iterrows():
-        out.append(get_row_variant(i, row))
+    for _,row in mc3_slice.iterrows():
+        out.append(get_row_variant(row))
 
     return out
 
@@ -207,3 +207,10 @@ def get_region_slice(region, mc3):
                         (mc3['End_Position'] <= region.end), :]
 
     return mc3_slice
+
+def get_variant_source(variant:Variant, mc3:pd.DataFrame):
+    """Returns the row of the dataframe for mc3 derived variants."""
+    if variant.source.split(':')[0] != 'mc3_row':
+        raise ValueError('Variant was not retrieved from mc3.')
+    else:
+        return mc3.loc[[int(variant.source.split(':')[1])]]

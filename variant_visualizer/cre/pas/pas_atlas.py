@@ -26,11 +26,11 @@ def get_pas_atlas_pas(region: core.BioRegion, pas_atlas: pd.DataFrame) -> list:
         ]
 
     out = []
-    for i,row in pas_atlas.iterrows():
-        out.extend(_get_pas_in_row(i,row))        
+    for _,row in pas_atlas.iterrows():
+        out.extend(_get_pas_in_row(row))        
     return out
 
-def _get_pas_in_row(i: int, row) -> list:
+def _get_pas_in_row(int, row) -> list:
     """
     Create pas BioRegion from i,row in pandas.DataFrame.iterrows()
     """
@@ -43,7 +43,7 @@ def _get_pas_in_row(i: int, row) -> list:
     strand = row[5]
     _ = core.check_strand(strand)
     signals = str(row[10])
-    source = f'pas_atlas_row:{i}'
+    source = f'pas_atlas_row:{row.name}'
 
     reference = core.get_reference(
         reference_type='genomic',
@@ -73,3 +73,10 @@ def _get_pas_in_row(i: int, row) -> list:
             label=signal
             )) 
     return out
+
+def get_pas_source(pas:PAS, pas_atlas:pd.DataFrame):
+    """Returns the row of the dataframe for pas_atlas derived PAS."""
+    if pas.source.split(':')[0] != 'pas_atlas_row':
+        raise ValueError('PAS was not retrieved from pas-atlas.')
+    else:
+        return pas_atlas.loc[[int(pas.source.split(':')[1])]]
